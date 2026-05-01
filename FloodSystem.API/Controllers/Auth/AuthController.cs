@@ -25,20 +25,38 @@ namespace FloodSystem.API.Controllers
 
             return Ok(new { message = result });
         }
-
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var token = await _authService.LoginAsync(dto);
+            var result = await _authService.LoginAsync(dto);
 
-            if (token == null)
+            if (result == null)
                 return Unauthorized(new { message = "Invalid email or password." });
 
             return Ok(new
             {
                 message = "Login successful.",
-                accessToken = token
+                accessToken = result.AccessToken,
+                refreshToken = result.RefreshToken
             });
         }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto dto)
+        {
+            var result = await _authService.RefreshAsync(dto.RefreshToken);
+
+            if (result == null)
+                return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+            return Ok(new
+            {
+                message = "Token refreshed successfully.",
+                accessToken = result.AccessToken,
+                refreshToken = result.RefreshToken
+            });
+        }
+
+
     }
 }

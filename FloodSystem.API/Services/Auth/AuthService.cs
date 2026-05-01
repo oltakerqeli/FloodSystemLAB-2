@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace FloodSystem.API.Services.Auth
 {
@@ -49,24 +50,24 @@ namespace FloodSystem.API.Services.Auth
             if (userRole != null)
             {
                 _context.UserRoles.Add(new UserRole
-        {
-                UserId = user.Id,
-                RoleId = userRole.Id,
-                AssignedAt = DateTime.UtcNow
-            });
+                {
+                    UserId = user.Id,
+                    RoleId = userRole.Id,
+                    AssignedAt = DateTime.UtcNow
+                });
 
-             await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
 
             return "User registered successfully.";
         }
 
-        public async Task<string?> LoginAsync(LoginDto dto)
+        public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
         {
             var user = await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            .Include(u => u.UserRoles)
+            .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
                 return null;
@@ -76,9 +77,64 @@ namespace FloodSystem.API.Services.Auth
             if (!isPasswordValid)
                 return null;
 
-            return GenerateJwtToken(user);
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = HashRefreshToken(refreshToken),
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
         }
 
+        public async Task<AuthResponseDto?> RefreshAsync(string refreshToken)
+        {
+            var tokenHash = HashRefreshToken(refreshToken);
+
+            var storedToken = await _context.RefreshTokens
+                .Include(rt => rt.User)
+                .ThenInclude(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(rt =>
+                    rt.TokenHash == tokenHash &&
+                    rt.RevokedAt == null &&
+                    rt.ExpiresAt > DateTime.UtcNow);
+
+            if (storedToken == null)
+                return null;
+
+            storedToken.RevokedAt = DateTime.UtcNow;
+
+            var newRefreshToken = GenerateRefreshToken();
+
+            _context.RefreshTokens.Add(new RefreshToken
+            {
+                UserId = storedToken.UserId,
+                TokenHash = HashRefreshToken(newRefreshToken),
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow
+            });
+
+            var newAccessToken = GenerateJwtToken(storedToken.User);
+
+            await _context.SaveChangesAsync();
+
+            return new AuthResponseDto
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+        }
         private string GenerateJwtToken(User user)
         {
             var jwtKey = _configuration["Jwt:Key"];
@@ -112,5 +168,17 @@ namespace FloodSystem.API.Services.Auth
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        private string GenerateRefreshToken()
+        {
+            var randomBytes = RandomNumberGenerator.GetBytes(64);
+            return Convert.ToBase64String(randomBytes);
+        }
+
+        private string HashRefreshToken(string refreshToken)
+        {
+            var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken));
+            return Convert.ToBase64String(bytes);
+        }
     }
+
 }
