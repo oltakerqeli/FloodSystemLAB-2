@@ -1,32 +1,28 @@
-using FloodSystem.API.Data;
 using FloodSystem.API.DTOs.Auth;
 using FloodSystem.API.Models.Auth;
-using Microsoft.EntityFrameworkCore;
+using FloodSystem.API.Repositories.Auth.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace FloodSystem.API.Services.Auth
 {
     public class AuthService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAuthRepository _authRepository;
         private readonly IConfiguration _configuration;
 
-        public AuthService(
-            ApplicationDbContext context,
-            IConfiguration configuration)
+        public AuthService(IAuthRepository authRepository, IConfiguration configuration)
         {
-            _context = context;
+            _authRepository = authRepository;
             _configuration = configuration;
         }
 
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var existingUser = await _authRepository.GetUserByEmailAsync(dto.Email);
 
             if (existingUser != null)
                 return "Email already exists.";
@@ -41,22 +37,21 @@ namespace FloodSystem.API.Services.Auth
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await _authRepository.AddUserAsync(user);
+            await _authRepository.SaveChangesAsync();
 
-            var userRole = await _context.Roles
-           .FirstOrDefaultAsync(r => r.Name == "User");
+            var userRole = await _authRepository.GetRoleByNameAsync("User");
 
             if (userRole != null)
             {
-                _context.UserRoles.Add(new UserRole
+                await _authRepository.AddUserRoleAsync(new UserRole
                 {
                     UserId = user.Id,
                     RoleId = userRole.Id,
                     AssignedAt = DateTime.UtcNow
                 });
 
-                await _context.SaveChangesAsync();
+                await _authRepository.SaveChangesAsync();
             }
 
             return "User registered successfully.";
@@ -64,10 +59,7 @@ namespace FloodSystem.API.Services.Auth
 
         public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
         {
-            var user = await _context.Users
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await _authRepository.GetUserByEmailAsync(dto.Email);
 
             if (user == null)
                 return null;
@@ -80,7 +72,7 @@ namespace FloodSystem.API.Services.Auth
             var accessToken = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
 
-            _context.RefreshTokens.Add(new RefreshToken
+            await _authRepository.AddRefreshTokenAsync(new RefreshToken
             {
                 UserId = user.Id,
                 TokenHash = HashRefreshToken(refreshToken),
@@ -88,7 +80,7 @@ namespace FloodSystem.API.Services.Auth
                 CreatedAt = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync();
+            await _authRepository.SaveChangesAsync();
 
             return new AuthResponseDto
             {
@@ -101,14 +93,7 @@ namespace FloodSystem.API.Services.Auth
         {
             var tokenHash = HashRefreshToken(refreshToken);
 
-            var storedToken = await _context.RefreshTokens
-                .Include(rt => rt.User)
-                .ThenInclude(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(rt =>
-                    rt.TokenHash == tokenHash &&
-                    rt.RevokedAt == null &&
-                    rt.ExpiresAt > DateTime.UtcNow);
+            var storedToken = await _authRepository.GetValidRefreshTokenAsync(tokenHash);
 
             if (storedToken == null)
                 return null;
@@ -117,7 +102,7 @@ namespace FloodSystem.API.Services.Auth
 
             var newRefreshToken = GenerateRefreshToken();
 
-            _context.RefreshTokens.Add(new RefreshToken
+            await _authRepository.AddRefreshTokenAsync(new RefreshToken
             {
                 UserId = storedToken.UserId,
                 TokenHash = HashRefreshToken(newRefreshToken),
@@ -127,7 +112,7 @@ namespace FloodSystem.API.Services.Auth
 
             var newAccessToken = GenerateJwtToken(storedToken.User);
 
-            await _context.SaveChangesAsync();
+            await _authRepository.SaveChangesAsync();
 
             return new AuthResponseDto
             {
@@ -135,24 +120,23 @@ namespace FloodSystem.API.Services.Auth
                 RefreshToken = newRefreshToken
             };
         }
+
         public async Task<bool> LogoutAsync(string refreshToken)
         {
             var tokenHash = HashRefreshToken(refreshToken);
 
-            var storedToken = await _context.RefreshTokens
-                .FirstOrDefaultAsync(rt =>
-                    rt.TokenHash == tokenHash &&
-                    rt.RevokedAt == null);
+            var storedToken = await _authRepository.GetActiveRefreshTokenAsync(tokenHash);
 
             if (storedToken == null)
                 return false;
 
             storedToken.RevokedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await _authRepository.SaveChangesAsync();
 
             return true;
         }
+
         private string GenerateJwtToken(User user)
         {
             var jwtKey = _configuration["Jwt:Key"];
@@ -186,6 +170,7 @@ namespace FloodSystem.API.Services.Auth
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
         private string GenerateRefreshToken()
         {
             var randomBytes = RandomNumberGenerator.GetBytes(64);
@@ -198,5 +183,4 @@ namespace FloodSystem.API.Services.Auth
             return Convert.ToBase64String(bytes);
         }
     }
-
 }

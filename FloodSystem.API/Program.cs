@@ -5,6 +5,8 @@ using System.Text;
 using FloodSystem.API.Data;
 using FloodSystem.API.Services.Auth;
 using Microsoft.OpenApi;
+using FloodSystem.API.Repositories.Auth.Interfaces;
+using FloodSystem.API.Repositories.Auth.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddControllers();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddEndpointsApiExplorer();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 
@@ -33,9 +38,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(jwtKey!))
         };
     });
-builder.Services.AddControllers();
 
-builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
