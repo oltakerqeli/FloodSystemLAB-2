@@ -57,6 +57,15 @@ namespace FloodSystem.API.Controllers
             });
         }
 
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout(RefreshTokenRequestDto dto)
+        {
+            var result = await _authService.LogoutAsync(dto.RefreshToken);
 
+            if (!result)
+                return BadRequest(new { message = "Invalid or already revoked refresh token." });
+
+            return Ok(new { message = "Logout successful." });
+        }
     }
 }

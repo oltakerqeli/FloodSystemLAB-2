@@ -135,6 +135,24 @@ namespace FloodSystem.API.Services.Auth
                 RefreshToken = newRefreshToken
             };
         }
+        public async Task<bool> LogoutAsync(string refreshToken)
+        {
+            var tokenHash = HashRefreshToken(refreshToken);
+
+            var storedToken = await _context.RefreshTokens
+                .FirstOrDefaultAsync(rt =>
+                    rt.TokenHash == tokenHash &&
+                    rt.RevokedAt == null);
+
+            if (storedToken == null)
+                return false;
+
+            storedToken.RevokedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
         private string GenerateJwtToken(User user)
         {
             var jwtKey = _configuration["Jwt:Key"];
