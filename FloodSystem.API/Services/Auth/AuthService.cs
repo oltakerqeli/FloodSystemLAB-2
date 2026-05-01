@@ -43,6 +43,21 @@ namespace FloodSystem.API.Services.Auth
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
+            var userRole = await _context.Roles
+           .FirstOrDefaultAsync(r => r.Name == "User");
+
+            if (userRole != null)
+            {
+                _context.UserRoles.Add(new UserRole
+        {
+                UserId = user.Id,
+                RoleId = userRole.Id,
+                AssignedAt = DateTime.UtcNow
+            });
+
+             await _context.SaveChangesAsync();
+            }
+
             return "User registered successfully.";
         }
 

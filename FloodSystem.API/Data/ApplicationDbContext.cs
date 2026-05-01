@@ -1,3 +1,5 @@
+using System.Data.Common;
+using System.Runtime.CompilerServices;
 using FloodSystem.API.Models.Auth;
 using Microsoft.EntityFrameworkCore;
 
@@ -49,7 +51,7 @@ namespace FloodSystem.API.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
-
+                
             modelBuilder.Entity<Role>()
                 .HasIndex(r => r.Name)
                 .IsUnique();
@@ -57,6 +59,31 @@ namespace FloodSystem.API.Data
             modelBuilder.Entity<Permission>()
                 .HasIndex(p => p.Name)
                 .IsUnique();
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role
+                {
+                    Id = 1,
+                    Name = "Admin",
+                    Description = "System administrator",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Role
+                {
+                    Id = 2,
+                    Name = "User",
+                    Description = "Regular system user",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                },
+                new Role
+                {
+                    Id = 3,
+                    Name = "Authority",
+                    Description = "Municipality or emergency authority user",
+                    CreatedAt = new DateTime(2026, 1, 1)
+                }
+            );
+                
         }
     }
 }
