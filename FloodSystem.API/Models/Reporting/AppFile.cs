@@ -1,3 +1,4 @@
+using FloodSystem.API.Models.Auth;
 namespace FloodSystem.API.Models.Reporting;
 
 public class AppFile
