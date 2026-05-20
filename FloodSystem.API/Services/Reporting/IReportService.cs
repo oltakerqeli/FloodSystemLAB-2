@@ -1,0 +1,10 @@
+namespace FloodSystem.API.Services.Reporting;
+
+public interface IReportService
+{
+    Task<ReportResponseDto> CreateFloodReportAsync(CreateFloodReportDto dto, int userId);
+    Task<ReportResponseDto> CreateDrainReportAsync(CreateDrainReportDto dto, int userId);
+    Task<List<ReportResponseDto>> GetAllFloodReportsAsync();
+    Task<List<ReportResponseDto>> GetAllDrainReportsAsync();
+    Task UpdateReportStatusAsync(int id, int statusId, string type);
+}
