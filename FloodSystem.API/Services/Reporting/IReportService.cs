@@ -1,3 +1,5 @@
+using FloodSystem.API.DTOs.Reporting;
+
 namespace FloodSystem.API.Services.Reporting;
 
 public interface IReportService

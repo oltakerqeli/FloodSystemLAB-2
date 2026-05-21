@@ -1,3 +1,9 @@
+using FloodSystem.API.Data;
+using FloodSystem.API.Models.Reporting;
+using FloodSystem.API.DTOs.Reporting;
+using FloodSystem.API.Repositories.Reporting;
+using Microsoft.AspNetCore.Hosting;
+
 namespace FloodSystem.API.Services.Reporting;
 
 public class ReportService : IReportService
