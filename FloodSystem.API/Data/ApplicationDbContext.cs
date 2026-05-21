@@ -2,6 +2,8 @@ using System.Data.Common;
 using System.Runtime.CompilerServices;
 using FloodSystem.API.Models.Auth;
 using Microsoft.EntityFrameworkCore;
+using FloodSystem.API.Models.Reporting;
+
 
 namespace FloodSystem.API.Data
 {
@@ -18,6 +20,13 @@ namespace FloodSystem.API.Data
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<FloodReport> FloodReports => Set<FloodReport>();
+        public DbSet<DrainReport> DrainReports => Set<DrainReport>();
+        public DbSet<ReportStatus> ReportStatuses => Set<ReportStatus>();
+        public DbSet<ReportType> ReportTypes => Set<ReportType>();
+        public DbSet<AppFile> Files => Set<AppFile>();
+        public DbSet<UserReport> UserReports => Set<UserReport>();
+        
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +91,17 @@ namespace FloodSystem.API.Data
                     Description = "Municipality or emergency authority user",
                     CreatedAt = new DateTime(2026, 1, 1)
                 }
+            );
+            modelBuilder.Entity<ReportStatus>().HasData(
+                new ReportStatus { Id = 1, Name = "Pending" },
+                new ReportStatus { Id = 2, Name = "In Progress" },
+                new ReportStatus { Id = 3, Name = "Resolved" }
+            );
+ 
+            modelBuilder.Entity<ReportType>().HasData(
+                new ReportType { Id = 1, Name = "Flood" },
+                new ReportType { Id = 2, Name = "Drain" },
+                new ReportType { Id = 3, Name = "Other" }
             );
                 
         }
