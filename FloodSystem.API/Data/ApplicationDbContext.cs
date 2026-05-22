@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using FloodSystem.API.Models.Auth;
 using Microsoft.EntityFrameworkCore;
 using FloodSystem.API.Models.Reporting;
-
+using FloodSystem.API.Models.Dashboard;
 
 namespace FloodSystem.API.Data
 {
@@ -26,7 +26,12 @@ namespace FloodSystem.API.Data
         public DbSet<ReportType> ReportTypes => Set<ReportType>();
         public DbSet<AppFile> Files => Set<AppFile>();
         public DbSet<UserReport> UserReports => Set<UserReport>();
-        
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<Setting> Settings => Set<Setting>();
+        public DbSet<ReportLog> ReportLogs => Set<ReportLog>();
+        public DbSet<Export> Exports => Set<Export>();
+        public DbSet<Import> Imports => Set<Import>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -103,7 +108,11 @@ namespace FloodSystem.API.Data
                 new ReportType { Id = 2, Name = "Drain" },
                 new ReportType { Id = 3, Name = "Other" }
             );
-                
+            modelBuilder.Entity<Setting>().HasData(
+                new Setting { Id = 1, Key = "AppName", Value = "Flood System", Description = "Application name", UpdatedAt = new DateTime(2026, 1, 1) },
+                new Setting { Id = 2, Key = "MaxAlertLevel", Value = "3", Description = "Maximum alert risk level", UpdatedAt = new DateTime(2026, 1, 1) },
+                new Setting { Id = 3, Key = "WeatherFetchInterval", Value = "30", Description = "Weather API fetch interval in minutes", UpdatedAt = new DateTime(2026, 1, 1) }
+            );    
         }
     }
 }
