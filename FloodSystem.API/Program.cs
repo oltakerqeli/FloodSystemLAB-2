@@ -8,6 +8,8 @@ using FloodSystem.API.Repositories.Auth.Interfaces;
 using FloodSystem.API.Repositories.Auth.Implementations;
 using FloodSystem.API.Services.Reporting;
 using FloodSystem.API.Repositories.Reporting;
+using FloodSystem.API.Services.Dashboard;
+using FloodSystem.API.Repositories.Dashboard;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,8 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
