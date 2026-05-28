@@ -10,6 +10,9 @@ using FloodSystem.API.Services.Reporting;
 using FloodSystem.API.Repositories.Reporting;
 using FloodSystem.API.Services.Dashboard;
 using FloodSystem.API.Repositories.Dashboard;
+using FloodSystem.API.Repositories.Weather.Interfaces;
+using FloodSystem.API.Repositories.Weather.Implementations;
+using FloodSystem.API.Services.Weather;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +26,22 @@ builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// REPOSITORET
+builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+builder.Services.AddScoped<IZoneRepository, ZoneRepository>();
+builder.Services.AddScoped<IWeatherDataRepository, WeatherDataRepository>();
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<ITrafficUpdateRepository, TrafficUpdateRepository>();
+
+// SERVICES
+builder.Services.AddScoped<LocationService>();
+builder.Services.AddScoped<ZoneService>();
+builder.Services.AddScoped<WeatherService>();
+builder.Services.AddScoped<AlertService>();
+builder.Services.AddScoped<TrafficService>();
+
+builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
