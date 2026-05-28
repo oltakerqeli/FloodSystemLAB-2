@@ -4,6 +4,7 @@ using FloodSystem.API.Models.Auth;
 using Microsoft.EntityFrameworkCore;
 using FloodSystem.API.Models.Reporting;
 using FloodSystem.API.Models.Dashboard;
+using FloodSystem.API.Models.Weather;
 
 namespace FloodSystem.API.Data
 {
@@ -32,6 +33,12 @@ namespace FloodSystem.API.Data
         public DbSet<ReportLog> ReportLogs => Set<ReportLog>();
         public DbSet<Export> Exports => Set<Export>();
         public DbSet<Import> Imports => Set<Import>();
+         public DbSet<Location> Locations => Set<Location>();
+        public DbSet<Zone> Zones => Set<Zone>();
+        public DbSet<ZoneLocation> ZoneLocations => Set<ZoneLocation>();
+        public DbSet<WeatherData> WeatherData => Set<WeatherData>();
+        public DbSet<Alert> Alerts => Set<Alert>();
+        public DbSet<TrafficUpdate> TrafficUpdates => Set<TrafficUpdate>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -113,6 +120,71 @@ namespace FloodSystem.API.Data
                 new Setting { Id = 2, Key = "MaxAlertLevel", Value = "3", Description = "Maximum alert risk level", UpdatedAt = new DateTime(2026, 1, 1) },
                 new Setting { Id = 3, Key = "WeatherFetchInterval", Value = "30", Description = "Weather API fetch interval in minutes", UpdatedAt = new DateTime(2026, 1, 1) }
             );    
+            
+             modelBuilder.Entity<Location>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Latitude).HasPrecision(9, 6);
+                entity.Property(e => e.Longitude).HasPrecision(9, 6);
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+            modelBuilder.Entity<Zone>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CriticalRainfallThreshold).HasPrecision(5, 2);
+            });
+
+            // ZoneLocation (Many-to-Mmany lidhja)
+            modelBuilder.Entity<ZoneLocation>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Zone)
+                    .WithMany(z => z.ZoneLocations)
+                    .HasForeignKey(e => e.ZoneId);
+                entity.HasOne(e => e.Location)
+                    .WithMany(l => l.ZoneLocations)
+                    .HasForeignKey(e => e.LocationId);
+            });
+
+            // WeatherData konfigurimi
+            modelBuilder.Entity<WeatherData>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Temperature).HasPrecision(5, 2);
+                entity.Property(e => e.Rainfall).HasPrecision(5, 2);
+                entity.Property(e => e.Humidity).HasPrecision(5, 2);
+                entity.HasOne(e => e.Location)
+                    .WithMany(l => l.WeatherData)
+                    .HasForeignKey(e => e.LocationId);
+            });
+
+            // Alerts konfigurimi
+            modelBuilder.Entity<Alert>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Message).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.RiskLevel).IsRequired().HasMaxLength(20);
+                entity.HasOne(e => e.Location)
+                    .WithMany(l => l.Alerts)
+                    .HasForeignKey(e => e.LocationId);
+            });
+
+            // TrafficUpdates konfigurimi
+            modelBuilder.Entity<TrafficUpdate>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.HasOne(e => e.Location)
+                    .WithMany(l => l.TrafficUpdates)
+                    .HasForeignKey(e => e.LocationId);
+            });
+
         }
     }
 }
