@@ -13,13 +13,15 @@ using FloodSystem.API.Repositories.Dashboard;
 using FloodSystem.API.Repositories.Weather.Interfaces;
 using FloodSystem.API.Repositories.Weather.Implementations;
 using FloodSystem.API.Services.Weather;
+using FloodSystem.API.MongoDB;
 
 var builder = WebApplication.CreateBuilder(args);
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddSingleton<MongoDbService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();

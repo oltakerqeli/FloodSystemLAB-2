@@ -2,19 +2,21 @@ using FloodSystem.API.Data;
 using FloodSystem.API.Models.Reporting;
 using FloodSystem.API.DTOs.Reporting;
 using FloodSystem.API.Repositories.Reporting;
-using Microsoft.AspNetCore.Hosting;
+using FloodSystem.API.MongoDB;
 
 namespace FloodSystem.API.Services.Reporting;
 
 public class ReportService : IReportService
 {
     private readonly IReportRepository _repo;
-    private readonly IWebHostEnvironment _env;
+    private readonly MongoDbService _mongo;
+    private readonly ApplicationDbContext _context;
 
-    public ReportService(IReportRepository repo, IWebHostEnvironment env)
+    public ReportService(IReportRepository repo, MongoDbService mongo, ApplicationDbContext context)
     {
         _repo = repo;
-        _env = env;
+        _mongo = mongo;
+        _context = context;
     }
 
     public async Task<ReportResponseDto> CreateFloodReportAsync(CreateFloodReportDto dto, int userId)
@@ -24,9 +26,20 @@ public class ReportService : IReportService
             UserId = userId,
             LocationId = dto.LocationId,
             Description = dto.Description,
-            StatusId = 1 // Pending
+            StatusId = 1
         };
         var created = await _repo.CreateFloodReportAsync(report);
+
+        await _mongo.GetCollection<ReportActivityLog>("report_activity_logs")
+            .InsertOneAsync(new ReportActivityLog
+            {
+                UserId = userId,
+                Action = "CREATE_FLOOD_REPORT",
+                Entity = "FloodReport",
+                EntityId = created.Id,
+                Description = dto.Description
+            });
+
         return new ReportResponseDto
         {
             Id = created.Id,
@@ -44,7 +57,7 @@ public class ReportService : IReportService
 
         if (dto.Photo != null)
         {
-            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
             Directory.CreateDirectory(uploadsFolder);
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(dto.Photo.FileName)}";
             var filePath = Path.Combine(uploadsFolder, fileName);
@@ -52,6 +65,18 @@ public class ReportService : IReportService
             using var stream = new FileStream(filePath, FileMode.Create);
             await dto.Photo.CopyToAsync(stream);
 
+            var file = new AppFile
+            {
+                Entity = "DrainReport",
+                EntityId = 0,
+                Filename = fileName,
+                FilePath = filePath,
+                FileSize = dto.Photo.Length,
+                UploadedBy = userId
+            };
+            _context.Files.Add(file);
+            await _context.SaveChangesAsync();
+            fileId = file.Id;
         }
 
         var report = new DrainReport
@@ -64,6 +89,17 @@ public class ReportService : IReportService
         };
 
         var created = await _repo.CreateDrainReportAsync(report);
+
+        await _mongo.GetCollection<ReportActivityLog>("report_activity_logs")
+            .InsertOneAsync(new ReportActivityLog
+            {
+                UserId = userId,
+                Action = "CREATE_DRAIN_REPORT",
+                Entity = "DrainReport",
+                EntityId = created.Id,
+                Description = dto.Description
+            });
+
         return new ReportResponseDto
         {
             Id = created.Id,

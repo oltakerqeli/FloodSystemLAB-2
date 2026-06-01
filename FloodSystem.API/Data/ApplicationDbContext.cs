@@ -184,6 +184,10 @@ namespace FloodSystem.API.Data
                     .WithMany(l => l.TrafficUpdates)
                     .HasForeignKey(e => e.LocationId);
             });
+            modelBuilder.Entity<AppFile>()
+                .HasOne(f => f.UploadedByUser)
+                .WithMany()
+                .HasForeignKey(f => f.UploadedBy);
 
         }
     }
