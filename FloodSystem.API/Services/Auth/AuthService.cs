@@ -6,6 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using FloodSystem.API.MongoDB;
 
 namespace FloodSystem.API.Services.Auth
 {
@@ -13,11 +14,13 @@ namespace FloodSystem.API.Services.Auth
     {
         private readonly IAuthRepository _authRepository;
         private readonly IConfiguration _configuration;
+        private readonly MongoDbService _mongoDbService;
 
-        public AuthService(IAuthRepository authRepository, IConfiguration configuration)
+        public AuthService(IAuthRepository authRepository, IConfiguration configuration, MongoDbService mongoDbService)
         {
             _authRepository = authRepository;
             _configuration = configuration;
+            _mongoDbService = mongoDbService;
         }
 
         public async Task<string> RegisterAsync(RegisterDto dto)
@@ -62,12 +65,18 @@ namespace FloodSystem.API.Services.Auth
             var user = await _authRepository.GetUserByEmailAsync(dto.Email);
 
             if (user == null)
+            {
+                await LogLoginActivityAsync(null, dto.Email, "LOGIN_FAILED");
                 return null;
+            }
 
             var isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
 
             if (!isPasswordValid)
+            {
+                await LogLoginActivityAsync(user.Id, user.Email, "LOGIN_FAILED");
                 return null;
+            }
 
             var accessToken = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
@@ -81,6 +90,8 @@ namespace FloodSystem.API.Services.Auth
             });
 
             await _authRepository.SaveChangesAsync();
+
+            await LogLoginActivityAsync(user.Id, user.Email, "LOGIN_SUCCESS");
 
             return new AuthResponseDto
             {
@@ -181,6 +192,19 @@ namespace FloodSystem.API.Services.Auth
         {
             var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken));
             return Convert.ToBase64String(bytes);
+        }
+
+        private async Task LogLoginActivityAsync(int? userId, string email, string action)
+        {
+            var collection = _mongoDbService.GetCollection<LoginActivityLog>("login_activity_logs");
+
+            await collection.InsertOneAsync(new LoginActivityLog
+            {
+                UserId = userId,
+                Email = email,
+                Action = action,
+                Timestamp = DateTime.UtcNow
+            });
         }
     }
 }
