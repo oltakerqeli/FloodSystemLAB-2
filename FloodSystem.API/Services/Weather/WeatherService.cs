@@ -3,9 +3,11 @@ using FloodSystem.API.Data;
 using FloodSystem.API.DTOs.Weather;
 using FloodSystem.API.Models.Weather;
 using FloodSystem.API.Repositories.Weather.Interfaces;
+using FloodSystem.API.MongoDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+
 
 namespace FloodSystem.API.Services.Weather
 {
@@ -18,6 +20,7 @@ namespace FloodSystem.API.Services.Weather
         private readonly IConfiguration _configuration;
         private readonly ILogger<WeatherService> _logger;
         private readonly HttpClient _httpClient;
+        private readonly MongoDbService _mongoDbService;
 
         public WeatherService(
             IWeatherDataRepository weatherDataRepo,
@@ -25,12 +28,14 @@ namespace FloodSystem.API.Services.Weather
             IAlertRepository alertRepo,
             ITrafficUpdateRepository trafficRepo,
             IConfiguration configuration,
-            ILogger<WeatherService> logger)
+            ILogger<WeatherService> logger,
+            MongoDbService mongoDbService) 
         {
             _weatherDataRepo = weatherDataRepo;
             _locationRepo = locationRepo;
             _alertRepo = alertRepo;
             _trafficRepo = trafficRepo;
+            _mongoDbService = mongoDbService;
             _configuration = configuration;
             _logger = logger;
             _httpClient = new HttpClient();
@@ -95,6 +100,29 @@ namespace FloodSystem.API.Services.Weather
             };
 
             await _weatherDataRepo.AddAsync(weatherData);
+            try
+{
+    var rawCollection = _mongoDbService.GetCollection<WeatherRawData>("weather_raw");
+    var rawDoc = new WeatherRawData
+    {
+        LocationId = locationId,
+        LocationName = location.Name,
+        Temperature = weatherData.Temperature,
+        Rainfall = weatherData.Rainfall,
+        Humidity = weatherData.Humidity,
+        WeatherCondition = "Unknown",
+        WindSpeed = 0,
+        Pressure = 0,
+        FetchedAt = DateTime.UtcNow,
+        Source = "OpenWeatherMap"
+    };
+    await rawCollection.InsertOneAsync(rawDoc);
+    _logger.LogInformation($"Raw weather data saved to MongoDB for {location.Name}");
+}
+catch (Exception ex)
+{
+    _logger.LogWarning($"Could not save to MongoDB: {ex.Message}");
+}
 
             var riskLevel = GetRiskLevel(rainfall);
             var alert = new Alert
