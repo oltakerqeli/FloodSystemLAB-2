@@ -1,0 +1,15 @@
+namespace FloodSystem.API.DTOs.Search
+{
+    public class AlertSearchDto
+    {
+        public int? LocationId { get; set; }
+        public string? RiskLevel { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
+        public string? SearchTerm { get; set; }
+        public string? SortBy { get; set; } = "CreatedAt";
+        public bool SortDescending { get; set; } = true;
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
+    }
+}
