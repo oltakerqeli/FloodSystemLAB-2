@@ -14,6 +14,7 @@ using FloodSystem.API.Repositories.Weather.Interfaces;
 using FloodSystem.API.Repositories.Weather.Implementations;
 using FloodSystem.API.Services.Weather;
 using FloodSystem.API.MongoDB;
+using FloodSystem.API.Services.Search; 
 
 var builder = WebApplication.CreateBuilder(args);
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
@@ -44,6 +45,8 @@ builder.Services.AddScoped<WeatherService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddScoped<TrafficService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHostedService<WeatherBackgroundService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 
 builder.Services.AddHttpClient();
 
