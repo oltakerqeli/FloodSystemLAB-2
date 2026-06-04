@@ -35,6 +35,7 @@ builder.Services.AddScoped<IZoneRepository, ZoneRepository>();
 builder.Services.AddScoped<IWeatherDataRepository, WeatherDataRepository>();
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<ITrafficUpdateRepository, TrafficUpdateRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // SERVICES
 builder.Services.AddScoped<LocationService>();
@@ -42,6 +43,7 @@ builder.Services.AddScoped<ZoneService>();
 builder.Services.AddScoped<WeatherService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddScoped<TrafficService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddHttpClient();
 
