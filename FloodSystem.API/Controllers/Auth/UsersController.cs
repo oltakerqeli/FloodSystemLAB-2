@@ -1,9 +1,7 @@
-using FloodSystem.API.Data;
 using FloodSystem.API.DTOs.Auth;
-using FloodSystem.API.Models.Auth;
+using FloodSystem.API.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace FloodSystem.API.Controllers.Auth
 {
@@ -12,50 +10,24 @@ namespace FloodSystem.API.Controllers.Auth
     [Authorize(Roles = "Admin")]
     public class UsersController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IUserService _userService;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.FirstName,
-                    u.LastName,
-                    u.Email,
-                    u.IsActive,
-                    Roles = u.UserRoles.Select(ur => ur.Role.Name)
-                })
-                .ToListAsync();
-
+            var users = await _userService.GetAllUsersAsync();
             return Ok(users);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
-            var user = await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .Where(u => u.Id == id)
-                .Select(u => new
-                {
-                    u.Id,
-                    u.FirstName,
-                    u.LastName,
-                    u.Email,
-                    u.IsActive,
-                    Roles = u.UserRoles.Select(ur => ur.Role.Name)
-                })
-                .FirstOrDefaultAsync();
+            var user = await _userService.GetUserByIdAsync(id);
 
             if (user == null)
                 return NotFound(new { message = "User not found." });
@@ -66,51 +38,26 @@ namespace FloodSystem.API.Controllers.Auth
         [HttpPut("{id}/deactivate")]
         public async Task<IActionResult> DeactivateUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var result = await _userService.DeactivateUserAsync(id);
 
-            if (user == null)
-                return NotFound(new { message = "User not found." });
+            if (result == "User not found.")
+                return NotFound(new { message = result });
 
-            user.IsActive = false;
-            user.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "User deactivated successfully." });
+            return Ok(new { message = result });
         }
 
         [HttpPut("{id}/assign-role")]
         public async Task<IActionResult> AssignRole(int id, AssignRoleDto dto)
         {
-            var user = await _context.Users.FindAsync(id);
+            var result = await _userService.AssignRoleAsync(id, dto);
 
-            if (user == null)
-                return NotFound(new { message = "User not found." });
+            if (result == "User not found." || result == "Role not found.")
+                return NotFound(new { message = result });
 
-            var role = await _context.Roles
-                .FirstOrDefaultAsync(r => r.Name == dto.RoleName);
+            if (result == "User already has this role.")
+                return BadRequest(new { message = result });
 
-            if (role == null)
-                return NotFound(new { message = "Role not found." });
-
-            var existingRole = await _context.UserRoles
-                .FirstOrDefaultAsync(ur =>
-                    ur.UserId == id &&
-                    ur.RoleId == role.Id);
-
-            if (existingRole != null)
-                return BadRequest(new { message = "User already has this role." });
-
-            _context.UserRoles.Add(new UserRole
-            {
-                UserId = id,
-                RoleId = role.Id,
-                AssignedAt = DateTime.UtcNow
-            });
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Role assigned successfully." });
+            return Ok(new { message = result });
         }
     }
 }
