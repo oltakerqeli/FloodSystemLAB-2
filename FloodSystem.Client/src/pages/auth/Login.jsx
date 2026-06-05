@@ -22,9 +22,7 @@ function Login() {
     setIsError(false);
 
     try {
-      const result = await loginUser(formData);
-      localStorage.setItem("accessToken", result.accessToken);
-      localStorage.setItem("refreshToken", result.refreshToken);
+      await loginUser(formData);
       window.location.href = "/dashboard";
     } catch (error) {
       setIsError(true);

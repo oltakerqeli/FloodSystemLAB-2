@@ -6,6 +6,7 @@ export async function loginUser(credentials) {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(credentials),
   });
 
@@ -31,6 +32,34 @@ export async function registerUser(userData) {
 
   if (!response.ok) {
     throw new Error(data.message || "Registration failed.");
+  }
+
+  return data;
+}
+
+export async function getCurrentUser() {
+  const response = await fetch(`${API_BASE_URL}/Auth/me`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("User is not authenticated.");
+  }
+
+  return await response.json();
+}
+
+export async function logoutUser() {
+  const response = await fetch(`${API_BASE_URL}/Auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Logout failed.");
   }
 
   return data;

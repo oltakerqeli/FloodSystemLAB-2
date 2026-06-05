@@ -1,6 +1,8 @@
 using FloodSystem.API.DTOs.Auth;
 using FloodSystem.API.Services.Auth;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FloodSystem.API.Controllers
 {
@@ -33,39 +35,89 @@ namespace FloodSystem.API.Controllers
             if (result == null)
                 return Unauthorized(new { message = "Invalid email or password." });
 
-            return Ok(new
+            Response.Cookies.Append("accessToken", result.AccessToken, new CookieOptions
             {
-                message = "Login successful.",
-                accessToken = result.AccessToken,
-                refreshToken = result.RefreshToken
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
+
+            Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Ok(new { message = "Login successful." });
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken(RefreshTokenRequestDto dto)
+        public async Task<IActionResult> RefreshToken()
         {
-            var result = await _authService.RefreshAsync(dto.RefreshToken);
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(refreshToken))
+                return Unauthorized(new { message = "Refresh token not found." });
+
+            var result = await _authService.RefreshAsync(refreshToken);
 
             if (result == null)
                 return Unauthorized(new { message = "Invalid or expired refresh token." });
 
-            return Ok(new
+            Response.Cookies.Append("accessToken", result.AccessToken, new CookieOptions
             {
-                message = "Token refreshed successfully.",
-                accessToken = result.AccessToken,
-                refreshToken = result.RefreshToken
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
+
+            Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
+            return Ok(new { message = "Token refreshed successfully." });
         }
 
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout(RefreshTokenRequestDto dto)
+        public async Task<IActionResult> Logout()
         {
-            var result = await _authService.LogoutAsync(dto.RefreshToken);
+            var refreshToken = Request.Cookies["refreshToken"];
 
-            if (!result)
-                return BadRequest(new { message = "Invalid or already revoked refresh token." });
+            if (string.IsNullOrEmpty(refreshToken))
+                return BadRequest(new { message = "Refresh token not found." });
+
+            await _authService.LogoutAsync(refreshToken);
+
+            Response.Cookies.Delete("accessToken");
+            Response.Cookies.Delete("refreshToken");
 
             return Ok(new { message = "Logout successful." });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        public IActionResult Me()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var fullName = User.FindFirstValue(ClaimTypes.Name);
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+
+            return Ok(new
+            {
+                id = userId,
+                fullName,
+                email,
+                roles
+            });
         }
     }
 }
