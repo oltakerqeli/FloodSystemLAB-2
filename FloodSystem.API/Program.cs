@@ -51,6 +51,20 @@ builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactClient", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://localhost:5174"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -104,6 +118,7 @@ if (app.Environment.IsDevelopment())
         config.DocumentTitle = "Flood System API";
     });
 }
+app.UseCors("AllowReactClient");
 
 app.UseAuthentication();
 app.UseAuthorization();
