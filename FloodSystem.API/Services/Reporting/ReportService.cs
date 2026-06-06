@@ -26,6 +26,11 @@ public class ReportService : IReportService
             UserId = userId,
             LocationId = dto.LocationId,
             Description = dto.Description,
+            Street = dto.Street,
+            District = dto.District,
+            Severity = dto.Severity,
+            LocationName = dto.LocationName,
+            WaterLevelCm = dto.WaterLevelCm,
             StatusId = 1
         };
         var created = await _repo.CreateFloodReportAsync(report);
@@ -45,6 +50,10 @@ public class ReportService : IReportService
             Id = created.Id,
             LocationId = created.LocationId,
             Description = created.Description,
+            Street = created.Street,
+            District = created.District,
+            Severity = created.Severity,
+            LocationName = created.LocationName,
             Status = "Pending",
             ReportType = "Flood",
             CreatedAt = created.CreatedAt
@@ -84,6 +93,10 @@ public class ReportService : IReportService
             UserId = userId,
             LocationId = dto.LocationId,
             Description = dto.Description,
+            Street = dto.Street,
+            District = dto.District,
+            Severity = dto.Severity,
+            ReporterName = dto.ReporterName,
             StatusId = 1,
             FileId = fileId
         };
@@ -105,6 +118,10 @@ public class ReportService : IReportService
             Id = created.Id,
             LocationId = created.LocationId,
             Description = created.Description,
+            Street = created.Street,
+            District = created.District,
+            Severity = created.Severity,
+            ReporterName = created.ReporterName,
             Status = "Pending",
             ReportType = "Drain",
             CreatedAt = created.CreatedAt
@@ -119,6 +136,11 @@ public class ReportService : IReportService
             Id = r.Id,
             LocationId = r.LocationId,
             Description = r.Description,
+            Street = r.Street,
+            District = r.District,
+            Severity = r.Severity,
+            LocationName = r.LocationName,
+            WaterLevelCm = r.WaterLevelCm,
             Status = r.Status.Name,
             ReportType = "Flood",
             CreatedAt = r.CreatedAt
@@ -133,9 +155,16 @@ public class ReportService : IReportService
             Id = r.Id,
             LocationId = r.LocationId,
             Description = r.Description,
+            Street = r.Street,
+            District = r.District,
+            Severity = r.Severity,
+            ReporterName = r.ReporterName,
             Status = r.Status.Name,
             ReportType = "Drain",
-            CreatedAt = r.CreatedAt
+            CreatedAt = r.CreatedAt,
+            PhotoUrl = r.File != null
+                ? $"/uploads/{Path.GetFileName(r.File.FilePath)}"
+                : null
         }).ToList();
     }
 

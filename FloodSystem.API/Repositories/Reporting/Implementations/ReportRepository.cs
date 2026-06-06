@@ -33,8 +33,10 @@ public class ReportRepository : IReportRepository
     }
 
     public async Task<List<DrainReport>> GetAllDrainReportsAsync()
-        => await _context.DrainReports.Include(r => r.Status).ToListAsync();
-
+    => await _context.DrainReports
+        .Include(r => r.Status)
+        .Include(r => r.File)
+        .ToListAsync();
     public async Task UpdateReportStatusAsync(int id, int statusId, string type)
     {
         if (type == "Flood")

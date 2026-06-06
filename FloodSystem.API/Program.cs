@@ -15,9 +15,11 @@ using FloodSystem.API.Repositories.Weather.Implementations;
 using FloodSystem.API.Services.Weather;
 using FloodSystem.API.MongoDB;
 using FloodSystem.API.Services.Search;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "uploads"));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
@@ -30,7 +32,6 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-// REPOSITORET
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<IZoneRepository, ZoneRepository>();
 builder.Services.AddScoped<IWeatherDataRepository, WeatherDataRepository>();
@@ -38,7 +39,6 @@ builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<ITrafficUpdateRepository, TrafficUpdateRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// SERVICES
 builder.Services.AddScoped<LocationService>();
 builder.Services.AddScoped<ZoneService>();
 builder.Services.AddScoped<WeatherService>();
@@ -49,7 +49,6 @@ builder.Services.AddHostedService<WeatherBackgroundService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 
 builder.Services.AddHttpClient();
-
 builder.Services.AddControllers();
 
 builder.Services.AddCors(options =>
@@ -79,10 +78,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey!))
     };
@@ -98,7 +95,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 });
 
 builder.Services.AddAuthorization();
-
 
 builder.Services.AddOpenApiDocument(config =>
 {
@@ -128,11 +124,17 @@ if (app.Environment.IsDevelopment())
         config.DocumentTitle = "Flood System API";
     });
 }
+
 app.UseCors("AllowReactClient");
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
+    RequestPath = "/uploads"
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
