@@ -38,10 +38,17 @@ namespace FloodSystem.API.Repositories.Weather.Implementations
             await _context.Alerts.AddAsync(alert);
             return alert;
         }
-
+  public async Task<Alert?> GetLatestByLocationIdAsync(int locationId)
+        {
+            return await _context.Alerts
+                .Where(a => a.LocationId == locationId)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+        }
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
         }
+    
     }
 }

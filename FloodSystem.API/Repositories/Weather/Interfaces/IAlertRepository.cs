@@ -8,6 +8,7 @@ namespace FloodSystem.API.Repositories.Weather.Interfaces
         Task<IEnumerable<Alert>> GetAllAsync();
         Task<IEnumerable<Alert>> GetByLocationIdAsync(int locationId);
         Task<Alert> AddAsync(Alert alert);
+        Task<Alert?> GetLatestByLocationIdAsync(int locationId);
         Task SaveChangesAsync();
     }
 }

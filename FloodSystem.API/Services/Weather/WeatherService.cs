@@ -124,16 +124,30 @@ catch (Exception ex)
     _logger.LogWarning($"Could not save to MongoDB: {ex.Message}");
 }
 
-            var riskLevel = GetRiskLevel(rainfall);
-            var alert = new Alert
-            {
-                Type = "Flood Warning",
-                Message = GetAlertMessage(location.Name, rainfall, riskLevel),
-                RiskLevel = riskLevel,
-                LocationId = locationId,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _alertRepo.AddAsync(alert);
+           var riskLevel = GetRiskLevel(rainfall);
+
+// Kontrollo nëse risk level ka ndryshuar që nga alert-i i fundit
+var lastAlert = await _alertRepo.GetLatestByLocationIdAsync(locationId);
+var lastRiskLevel = lastAlert?.RiskLevel;
+
+// Krijo alert VETËM nëse nuk ka alert të mëparshëm OSE risk level ka ndryshuar
+if (lastAlert == null || lastRiskLevel != riskLevel)
+{
+    var alert = new Alert
+    {
+        Type = "Flood Warning",
+        Message = GetAlertMessage(location.Name, rainfall, riskLevel),
+        RiskLevel = riskLevel,
+        LocationId = locationId,
+        CreatedAt = DateTime.UtcNow
+    };
+    await _alertRepo.AddAsync(alert);
+    _logger.LogInformation($"New alert created for {location.Name}: {riskLevel}");
+}
+else
+{
+    _logger.LogInformation($"No risk change for {location.Name} (still {riskLevel}), skipping alert.");
+}
 
             var trafficUpdate = new TrafficUpdate
             {
