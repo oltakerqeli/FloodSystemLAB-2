@@ -23,6 +23,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAll()
         {
             var locations = await _locationService.GetAllLocationsAsync();
@@ -30,6 +31,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
             var location = await _locationService.GetLocationByIdAsync(id);
@@ -40,7 +42,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Authority")]
         public async Task<IActionResult> Create([FromBody] CreateLocationDto dto)
         {
             try
@@ -55,7 +57,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Authority")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateLocationDto dto)
         {
             var location = await _locationService.UpdateLocationAsync(id, dto);
@@ -66,7 +68,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Authority")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _locationService.DeleteLocationAsync(id);

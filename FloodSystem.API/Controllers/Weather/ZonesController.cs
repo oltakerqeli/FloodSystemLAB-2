@@ -10,7 +10,7 @@ namespace FloodSystem.API.Controllers.Weather
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+   [Authorize]
     public class ZonesController : ControllerBase
     {
         private readonly ZoneService _zoneService;
@@ -25,6 +25,7 @@ namespace FloodSystem.API.Controllers.Weather
         // ==================== METODAT EKZISTUESE ====================
 
         [HttpGet]
+         [Authorize] 
         public async Task<IActionResult> GetAll()
         {
             var zones = await _zoneService.GetAllZonesAsync();
@@ -32,6 +33,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpGet("{id}")]
+         [Authorize] 
         public async Task<IActionResult> GetById(int id)
         {
             var zone = await _zoneService.GetZoneByIdAsync(id);
@@ -42,6 +44,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Authority")]
         public async Task<IActionResult> Create([FromBody] CreateZoneDto dto)
         {
             try
@@ -56,6 +59,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Authority")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateZoneDto dto)
         {
             var zone = await _zoneService.UpdateZoneAsync(id, dto);
@@ -66,6 +70,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Authority")]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _zoneService.DeleteZoneAsync(id);

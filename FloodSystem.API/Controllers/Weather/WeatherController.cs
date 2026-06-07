@@ -41,7 +41,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPost("fetch/{locationId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Authority")]
         public async Task<IActionResult> FetchWeatherForLocation(int locationId)
         {
             try
@@ -56,7 +56,7 @@ namespace FloodSystem.API.Controllers.Weather
         }
 
         [HttpPost("fetch-all")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, Authority")]
         public async Task<IActionResult> FetchWeatherForAllLocations()
         {
             await _weatherService.FetchAndProcessAllLocationsAsync();
