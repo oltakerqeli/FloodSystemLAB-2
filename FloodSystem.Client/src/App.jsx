@@ -7,6 +7,10 @@ import "./App.css";
 import DrainReportPage from "./pages/reports/DrainReportPage";
 import FloodReportPage from "./pages/reports/FloodReportPage";
 import MyReportsPage from "./pages/reports/MyReportsPage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import WeatherPage from "./pages/weather/WeatherPage";
+import AlertsPage from "./pages/weather/AlertsPage";
+import AdminPanelPage from "./pages/admin/AdminPanelPage";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -47,14 +51,10 @@ function App() {
 <Route path="/report/flood" element={<ProtectedRoute><FloodReportPage /></ProtectedRoute>} />
 <Route path="/my-reports" element={<ProtectedRoute><MyReportsPage /></ProtectedRoute>} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
+        <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute requiredRole="Admin"><AdminPanelPage /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
   );
