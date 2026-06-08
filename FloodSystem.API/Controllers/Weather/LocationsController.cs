@@ -22,13 +22,18 @@ namespace FloodSystem.API.Controllers.Weather
             _context = context;  // ✅ Shto këtë
         }
 
-        [HttpGet]
-        [Authorize]
-        public async Task<IActionResult> GetAll()
-        {
-            var locations = await _locationService.GetAllLocationsAsync();
-            return Ok(locations);
-        }
+       [HttpGet]
+[Authorize]
+public async Task<IActionResult> GetAll()
+{
+    // Kontrollo nëse përdoruesi është Admin ose Authority
+    var isAdminOrAuthority = User.IsInRole("Admin") || User.IsInRole("Authority");
+    
+    // Nëse është Admin/Authority, merr TË GJITHA lokacionet
+    // Përndryshe, merr vetëm ato aktive
+    var locations = await _locationService.GetAllLocationsAsync(isAdminOrAuthority);
+    return Ok(locations);
+}
 
         [HttpGet("{id}")]
         [Authorize]
@@ -67,16 +72,16 @@ namespace FloodSystem.API.Controllers.Weather
             return Ok(location);
         }
 
-        [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin, Authority")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var result = await _locationService.DeleteLocationAsync(id);
-            if (!result)
-                return NotFound(new { message = "Location not found" });
+     [HttpDelete("{id}")]
+[Authorize(Roles = "Admin,Authority")]  // Authority gjithashtu mund të fshijë
+public async Task<IActionResult> Delete(int id)
+{
+    var result = await _locationService.DeleteLocationAsync(id);
+    if (!result)
+        return NotFound(new { message = "Location not found" });
 
-            return NoContent();
-        }
+    return NoContent();
+}
 
         /// <summary>
         /// Shiko të gjitha zonat ku bën pjesë një location

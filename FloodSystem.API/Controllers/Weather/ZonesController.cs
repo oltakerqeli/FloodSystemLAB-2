@@ -24,14 +24,16 @@ namespace FloodSystem.API.Controllers.Weather
 
         // ==================== METODAT EKZISTUESE ====================
 
-        [HttpGet]
-         [Authorize] 
-        public async Task<IActionResult> GetAll()
-        {
-            var zones = await _zoneService.GetAllZonesAsync();
-            return Ok(zones);
-        }
+       [HttpGet]
+[Authorize]
+public async Task<IActionResult> GetAll()
+{
 
+    var isAdminOrAuthority = User.IsInRole("Admin") || User.IsInRole("Authority");
+    
+    var zones = await _zoneService.GetAllZonesAsync(isAdminOrAuthority);
+    return Ok(zones);
+}
         [HttpGet("{id}")]
          [Authorize] 
         public async Task<IActionResult> GetById(int id)
