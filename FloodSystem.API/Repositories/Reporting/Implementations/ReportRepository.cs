@@ -12,8 +12,8 @@ public class ReportRepository : IReportRepository
         _context = context;
     }
 
-    public async Task<List<FloodReport>> GetAllFloodReportsAsync()
-        => await _context.FloodReports.Include(r => r.Status).ToListAsync();
+    public async Task<List<FloodReport>> GetAllFloodReportsAsync(int userId)
+        => await _context.FloodReports.Where(r => r.UserId == userId).Include(r => r.Status).ToListAsync();
 
     public async Task<FloodReport?> GetFloodReportByIdAsync(int id)
         => await _context.FloodReports.Include(r => r.Status).FirstOrDefaultAsync(r => r.Id == id);
@@ -32,8 +32,9 @@ public class ReportRepository : IReportRepository
         return report;
     }
 
-    public async Task<List<DrainReport>> GetAllDrainReportsAsync()
+    public async Task<List<DrainReport>> GetAllDrainReportsAsync(int userId)
     => await _context.DrainReports
+        .Where(r => r.UserId == userId)
         .Include(r => r.Status)
         .Include(r => r.File)
         .ToListAsync();

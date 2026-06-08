@@ -35,13 +35,18 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("flood")]
-    public async Task<IActionResult> GetFloodReports()
-        => Ok(await _service.GetAllFloodReportsAsync());
+public async Task<IActionResult> GetFloodReports()
+{
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    return Ok(await _service.GetAllFloodReportsAsync(userId));
+}
 
-    [HttpGet("drain")]
-    public async Task<IActionResult> GetDrainReports()
-        => Ok(await _service.GetAllDrainReportsAsync());
-
+[HttpGet("drain")]
+public async Task<IActionResult> GetDrainReports()
+{
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    return Ok(await _service.GetAllDrainReportsAsync(userId));
+}
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Admin,Authority")]
     public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)

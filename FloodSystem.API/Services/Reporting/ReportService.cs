@@ -128,9 +128,9 @@ public class ReportService : IReportService
         };
     }
 
-    public async Task<List<ReportResponseDto>> GetAllFloodReportsAsync()
+    public async Task<List<ReportResponseDto>> GetAllFloodReportsAsync(int userId)
     {
-        var reports = await _repo.GetAllFloodReportsAsync();
+        var reports = await _repo.GetAllFloodReportsAsync(userId);
         return reports.Select(r => new ReportResponseDto
         {
             Id = r.Id,
@@ -147,9 +147,9 @@ public class ReportService : IReportService
         }).ToList();
     }
 
-    public async Task<List<ReportResponseDto>> GetAllDrainReportsAsync()
+    public async Task<List<ReportResponseDto>> GetAllDrainReportsAsync(int userId)
     {
-        var reports = await _repo.GetAllDrainReportsAsync();
+        var reports = await _repo.GetAllDrainReportsAsync(userId);
         return reports.Select(r => new ReportResponseDto
         {
             Id = r.Id,

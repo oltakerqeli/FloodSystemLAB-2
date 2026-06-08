@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDrainReports, useFloodReports } from "../../hooks/useReports";
 import ReportCard from "../../components/reports/ReportCard";
@@ -8,12 +8,29 @@ export default function MyReportsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("drain");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
 
-  const { reports: drainReports, loading: loadingDrain } = useDrainReports(statusFilter || null);
-  const { reports: floodReports, loading: loadingFlood } = useFloodReports(statusFilter ? { status: statusFilter } : {});
+  const { reports: drainReports, loading: loadingDrain } = useDrainReports();
+  const { reports: floodReports, loading: loadingFlood } = useFloodReports();
 
-  const reports = activeTab === "drain" ? drainReports : floodReports;
+  const allReports = activeTab === "drain" ? drainReports : floodReports;
   const loading = activeTab === "drain" ? loadingDrain : loadingFlood;
+
+  const filteredReports = useMemo(() => {
+    let result = [...allReports];
+
+    if (statusFilter) {
+      result = result.filter(r => r.status?.toLowerCase() === statusFilter.toLowerCase());
+    }
+
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+    });
+
+    return result;
+  }, [allReports, statusFilter, sortOrder]);
 
   return (
     <div className="my-reports-page">
@@ -44,12 +61,18 @@ export default function MyReportsPage() {
       </div>
 
       <div className="report-filter">
-        <label>Filter by status:</label>
+        <label>Status:</label>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">All</option>
           <option value="pending">Pending</option>
           <option value="reviewed">Reviewed</option>
           <option value="resolved">Resolved</option>
+        </select>
+
+        <label style={{ marginLeft: "12px" }}>Sort:</label>
+        <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
         </select>
       </div>
 
@@ -58,16 +81,22 @@ export default function MyReportsPage() {
           <div className="report-list__loading">
             {[1, 2, 3].map((i) => <div key={i} className="report-skeleton" />)}
           </div>
-        ) : reports.length === 0 ? (
+        ) : filteredReports.length === 0 ? (
           <div className="report-list__empty">
             <div className="report-list__empty-icon">{activeTab === "drain" ? "🚧" : "🌊"}</div>
-            <p>You have no {activeTab === "drain" ? "drain" : "flood"} reports yet</p>
+            <p>
+              {statusFilter
+                ? `No ${statusFilter} reports found`
+                : `You have no ${activeTab === "drain" ? "drain" : "flood"} reports yet`}
+            </p>
             <button className="rp-btn rp-btn--primary rp-btn--sm" onClick={() => navigate(activeTab === "drain" ? "/report/drain" : "/report/flood")}>
               Submit report
             </button>
           </div>
         ) : (
-          reports.map((report) => <ReportCard key={report.id} report={report} type={activeTab} />)
+          filteredReports.map((report) => (
+            <ReportCard key={report.id} report={report} type={activeTab} />
+          ))
         )}
       </div>
     </div>

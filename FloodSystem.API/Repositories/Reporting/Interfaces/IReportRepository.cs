@@ -3,10 +3,10 @@ namespace FloodSystem.API.Repositories.Reporting;
 
 public interface IReportRepository
 {
-    Task<List<FloodReport>> GetAllFloodReportsAsync();
+    Task<List<FloodReport>> GetAllFloodReportsAsync(int userId);
     Task<FloodReport?> GetFloodReportByIdAsync(int id);
     Task<FloodReport> CreateFloodReportAsync(FloodReport report);
     Task<DrainReport> CreateDrainReportAsync(DrainReport report);
-    Task<List<DrainReport>> GetAllDrainReportsAsync();
+    Task<List<DrainReport>> GetAllDrainReportsAsync(int userId);
     Task UpdateReportStatusAsync(int id, int statusId, string type);
 }
