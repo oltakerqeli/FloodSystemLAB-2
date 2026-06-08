@@ -55,25 +55,26 @@ export default function MyReportsPage() {
       setExporting(false);
     }
   };
+
   const handleImport = async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", exportType);
-    const response = await fetch(`${API_BASE_URL}/Dashboard/import`, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-    if (!response.ok) throw new Error("Import failed");
-    alert("Import successful!");
-    window.location.reload();
-  } catch (err) {
-    alert("Import failed. Please try again.");
-  }
-};
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", exportType);
+      const response = await fetch(`${API_BASE_URL}/Dashboard/import`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!response.ok) throw new Error("Import failed");
+      alert("Import successful!");
+      window.location.reload();
+    } catch (err) {
+      alert("Import failed. Please try again.");
+    }
+  };
 
   return (
     <div className="my-reports-page">
@@ -83,54 +84,56 @@ export default function MyReportsPage() {
           <p>All reports you have submitted</p>
         </div>
         <div className="my-reports-page__actions">
-          <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => navigate("/report/drain")}>
-            + Drain Report
-          </button>
-          <button className="rp-btn rp-btn--flood rp-btn--sm" onClick={() => navigate("/report/flood")}>
-            + Flood Report
-          </button>
-          <select
-          className="export-select"
-          value={exportType}
-          onChange={(e) => setExportType(e.target.value)}
-          style={{
-            height: "34px", padding: "0 10px", borderRadius: "10px",
-            background: "#0d2252", border: "1px solid rgba(255,255,255,0.15)",
-            color: "white", fontSize: "13px", outline: "none", cursor: "pointer"
-          }}
-        >
-          <option value="all">All Data</option>
-          <option value="flood">Flood Reports</option>
-          <option value="drain">Drain Reports</option>
-          <option value="alerts">Alerts</option>
-          <option value="locations">Locations</option>
-        </select>
-          <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("csv")} disabled={exporting}>
-            📥 CSV
-          </button>
-          <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("excel")} disabled={exporting}>
-            📊 Excel
-          </button>
-          <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("json")} disabled={exporting}>
-            📋 JSON
-          </button>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => navigate("/report/drain")}>
+              + Drain Report
+            </button>
+            <button className="rp-btn rp-btn--flood rp-btn--sm" onClick={() => navigate("/report/flood")}>
+              + Flood Report
+            </button>
+            <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => navigate("/dynamic-report")}>
+              📊 Dynamic Report
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <select
+              className="export-select"
+              value={exportType}
+              onChange={(e) => setExportType(e.target.value)}
+              style={{
+                height: "34px", padding: "0 10px", borderRadius: "10px",
+                background: "#0d2252", border: "1px solid rgba(255,255,255,0.15)",
+                color: "white", fontSize: "13px", outline: "none", cursor: "pointer"
+              }}
+            >
+              <option value="all">All Data</option>
+              <option value="flood">Flood Reports</option>
+              <option value="drain">Drain Reports</option>
+              <option value="alerts">Alerts</option>
+              <option value="locations">Locations</option>
+            </select>
+            <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("csv")} disabled={exporting}>
+              📥 CSV
+            </button>
+            <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("excel")} disabled={exporting}>
+              📊 Excel
+            </button>
+            <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => handleExport("json")} disabled={exporting}>
+              📋 JSON
+            </button>
+            <label
+              style={{
+                height: "34px", padding: "0 14px", borderRadius: "10px",
+                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+                color: "white", fontSize: "13px", cursor: "pointer",
+                display: "inline-flex", alignItems: "center", gap: "6px"
+              }}
+            >
+              📤 Import
+              <input type="file" accept=".csv,.xlsx,.json" style={{ display: "none" }} onChange={handleImport} />
+            </label>
+          </div>
         </div>
-        <label
-  style={{
-    height: "34px", padding: "0 14px", borderRadius: "10px",
-    background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-    color: "white", fontSize: "13px", cursor: "pointer",
-    display: "inline-flex", alignItems: "center", gap: "6px"
-  }}
->
-  📤 Import
-  <input
-    type="file"
-    accept=".csv,.xlsx,.json"
-    style={{ display: "none" }}
-    onChange={handleImport}
-  />
-</label>
       </div>
 
       <div className="report-tabs">

@@ -12,4 +12,5 @@ public interface IDashboardService
     Task UpdateSettingAsync(int id, string value);
     Task<ExportFileResult> ExportReportsAsync(CreateExportDto dto, int userId);
     Task<ImportDto> ImportDataAsync(IFormFile file, string type, int userId);
+    Task<ExportFileResult> GenerateDynamicReportAsync(DynamicReportDto dto, int userId);
 }

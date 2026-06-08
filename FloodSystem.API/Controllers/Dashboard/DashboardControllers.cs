@@ -73,4 +73,12 @@ public async Task<IActionResult> ImportData([FromForm] IFormFile file, [FromForm
     var result = await _service.ImportDataAsync(file, type, userId);
     return Ok(result);
 }
+
+[HttpPost("dynamic-report")]
+public async Task<IActionResult> GenerateDynamicReport([FromBody] DynamicReportDto dto)
+{
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    var result = await _service.GenerateDynamicReportAsync(dto, userId);
+    return File(result.Content, result.ContentType, result.FileName);
+}
 }

@@ -11,6 +11,7 @@ import DashboardPage from "./pages/dashboard/DashboardPage";
 import WeatherPage from "./pages/weather/WeatherPage";
 import AlertsPage from "./pages/weather/AlertsPage";
 import AdminPanelPage from "./pages/admin/AdminPanelPage";
+import DynamicReportPage from "./pages/reports/DynamicReportPage";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -50,6 +51,7 @@ function App() {
         <Route path="/report/drain" element={<ProtectedRoute><DrainReportPage /></ProtectedRoute>} />
 <Route path="/report/flood" element={<ProtectedRoute><FloodReportPage /></ProtectedRoute>} />
 <Route path="/my-reports" element={<ProtectedRoute><MyReportsPage /></ProtectedRoute>} />
+<Route path="/dynamic-report" element={<ProtectedRoute><DynamicReportPage /></ProtectedRoute>} />
 
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
