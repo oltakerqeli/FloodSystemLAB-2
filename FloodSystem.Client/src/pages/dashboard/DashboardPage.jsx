@@ -66,6 +66,10 @@ export default function DashboardPage() {
       setAlerts(a || []);
       setWeather(w || []);
       setSafeRoutes(r);
+      
+      // Debug: shiko sa alerts po vijnë
+      console.log("Alerts received:", a?.length || 0);
+      console.log("Alerts data:", a);
     } catch (error) {
       console.error("Load error:", error);
     } finally {
@@ -77,9 +81,11 @@ export default function DashboardPage() {
     loadData();
   }, [loadData]);
 
+  // ✅ ALERT COUNTS - E RREGULLUAR
   const activeAlerts = alerts.filter((a) => a.riskLevel === "HIGH" || a.riskLevel === "MEDIUM");
-const highRiskCount = alerts.filter((a) => a.riskLevel === "HIGH").length;
-const mediumRiskCount = alerts.filter((a) => a.riskLevel === "MEDIUM").length;
+  const highRiskCount = alerts.filter((a) => a.riskLevel === "HIGH").length;
+  const mediumRiskCount = alerts.filter((a) => a.riskLevel === "MEDIUM").length;
+  const totalActiveAlerts = activeAlerts.length;
 
   const handleLogout = async () => {
     await logout();
@@ -115,12 +121,29 @@ const mediumRiskCount = alerts.filter((a) => a.riskLevel === "MEDIUM").length;
         </div>
         <div className="db-navbar-links">
           <Link to="/dashboard" className="db-nav-link active"><span>🏠</span> Dashboard</Link>
-          <Link to="/weather" className="db-nav-link"><span>🌤️</span> Weather</Link>
-          <Link to="/alerts" className="db-nav-link"><span>🚨</span> Alerts</Link>
-          <Link to="/safe-routes" className="db-nav-link"><span>🛣️</span> Safe Routes</Link>
-          <Link to="/my-reports" className="db-nav-link"><span>📋</span> My Reports</Link>
-          <Link to="/report/flood" className="db-nav-link"><span>🌊</span> Report Flood</Link>
-          <Link to="/report/drain" className="db-nav-link"><span>🚧</span> Report Drain</Link>
+          
+          {/* DROPDOWN - WEATHER */}
+          <div className="dropdown">
+            <button className="dropbtn">🌤️ Weather <span>▼</span></button>
+            <div className="dropdown-content">
+              <Link to="/weather">🌡️ Current Weather</Link>
+              <Link to="/alerts">🚨 Alerts</Link>
+              <Link to="/safe-routes">🛣️ Safe Routes</Link>
+              <Link to="/traffic">🚦 Traffic Updates</Link>
+            </div>
+          </div>
+
+          {/* DROPDOWN - REPORTS */}
+          <div className="dropdown">
+            <button className="dropbtn">📋 Reports <span>▼</span></button>
+            <div className="dropdown-content">
+              <Link to="/my-reports">📋 My Reports</Link>
+              <Link to="/report/flood">🌊 Report Flood</Link>
+              <Link to="/report/drain">🚧 Report Drain</Link>
+            </div>
+          </div>
+
+          {/* PANEL - vetëm për Admin/Authority */}
           {isAdminOrAuthority && (
             <Link to="/admin" className="db-nav-link"><span>⚙️</span> Authority Panel</Link>
           )}
@@ -195,148 +218,153 @@ const mediumRiskCount = alerts.filter((a) => a.riskLevel === "MEDIUM").length;
           </div>
         </div>
 
- {/* SIDEBAR */}
-<aside className="db-sidebar">
-  {/* User Info */}
-  <div className="db-user-card">
-    <div className="db-user-avatar">👤</div>
-    <div className="db-user-info">
-      <p className="db-user-name">{user?.firstName} {user?.lastName}</p>
-      <p className="db-user-email">{user?.email}</p>
-      <p className="db-user-role">{user?.roles?.join(", ")}</p>
-    </div>
-  </div>
-
-  {/* EMERGENCY GUIDE */}
-  <div className="db-emergency-guide">
-    <p className="db-section-title">🆘 EMERGENCY GUIDE</p>
-    <div className="db-guide-content">
-      <div className="db-guide-item">
-        <span className="db-guide-icon">🌊</span>
-        <div className="db-guide-text">
-          <strong>Flood:</strong> Move to higher ground immediately. Avoid walking or driving through flood water.
-        </div>
-      </div>
-      <div className="db-guide-item">
-        <span className="db-guide-icon">🚧</span>
-        <div className="db-guide-text">
-          <strong>Drain Blockage:</strong> Report to municipality. Avoid area until cleared.
-        </div>
-      </div>
-      <div className="db-guide-item">
-        <span className="db-guide-icon">⚠️</span>
-        <div className="db-guide-text">
-          <strong>High Risk Zone:</strong> Follow evacuation orders. Keep emergency kit ready.
-        </div>
-      </div>
-    </div>
-    <div className="db-emergency-calls">
-      <p className="db-call-title">📞 EMERGENCY CONTACTS</p>
-      <div className="db-call-item">
-        <span className="db-call-number">112</span>
-        <span className="db-call-label">General Emergency</span>
-      </div>
-      <div className="db-call-item">
-        <span className="db-call-number">0800 11 222</span>
-        <span className="db-call-label">Municipality Helpdesk</span>
-      </div>
-      <div className="db-call-item">
-        <span className="db-call-number">+383 38 123 456</span>
-        <span className="db-call-label">Flood Response Unit</span>
-      </div>
-    </div>
-  </div>
-
-  {/* OVERVIEW STATS */}
-  <div>
-    <p className="db-section-title">📊 OVERVIEW</p>
-    <div className="db-stat-grid">
-      <div className="db-stat-card">
-        <div className="db-stat-card__icon">📍</div>
-        <div className="db-stat-card__val">{locations.length}</div>
-        <div className="db-stat-card__label">Locations</div>
-      </div>
-      <div className="db-stat-card">
-        <div className="db-stat-card__icon">🚨</div>
-        <div className="db-stat-card__val" style={{ color: activeAlerts.length ? "#fca5a5" : "white" }}>
-          {activeAlerts.length}
-        </div>
-        <div className="db-stat-card__label">Active Alerts</div>
-      </div>
-      <div className="db-stat-card">
-        <div className="db-stat-card__icon">🔴</div>
-        <div className="db-stat-card__val">{highRiskCount}</div>
-        <div className="db-stat-card__label">High Risk</div>
-      </div>
-      <div className="db-stat-card">
-        <div className="db-stat-card__icon">🟡</div>
-        <div className="db-stat-card__val">{mediumRiskCount}</div>
-        <div className="db-stat-card__label">Medium Risk</div>
-      </div>
-    </div>
-  </div>
-
-  {/* RISK ZONES */}
-  <div>
-    <p className="db-section-title">🗺️ RISK ZONES</p>
-    <div className="db-zone-list">
-      {zones.map((z) => {
-        const c = riskColor(z.currentRiskLevel?.toLowerCase() || "low");
-        return (
-          <div key={z.id} className="db-zone-item">
-            <div className="db-zone-dot" style={{ background: c.fill }} />
-            <span className="db-zone-name">{z.name}</span>
-            <span className="db-zone-badge" style={{ background: c.fill + "25", color: c.fill }}>
-              {riskLabel(z.currentRiskLevel)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-
-  {/* ACTIVE ALERTS */}
-  {activeAlerts.length > 0 && (
-    <div>
-      <p className="db-section-title">🚨 ACTIVE ALERTS ({activeAlerts.length})</p>
-      <div className="db-alert-list">
-        {activeAlerts.slice(0, 5).map((a) => (
-          <div key={a.id} className={`db-alert-item db-alert-item--${severityClass(a.riskLevel)}`}>
-            <div className="db-alert-content">
-              <p className="db-alert-title">{a.type}</p>
-              <p className="db-alert-msg">{a.message?.substring(0, 50)}...</p>
-              <p className="db-alert-location">📍 {a.locationName}</p>
+        {/* SIDEBAR */}
+        <aside className="db-sidebar">
+          {/* User Info */}
+          <div className="db-user-card">
+            <div className="db-user-avatar">👤</div>
+            <div className="db-user-info">
+              <p className="db-user-name">{user?.firstName} {user?.lastName}</p>
+              <p className="db-user-email">{user?.email}</p>
+              <p className="db-user-role">{user?.roles?.join(", ")}</p>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  )}
 
-  {/* SAFE ROUTES SUMMARY */}
-  {safeRoutes && (
-    <div>
-      <p className="db-section-title">🛣️ SAFE ROUTES SUMMARY</p>
-      <div className="db-stat-grid">
-        <div className="db-stat-card">
-          <div className="db-stat-card__icon">✅</div>
-          <div className="db-stat-card__val">{safeRoutes.safeLocations?.length || 0}</div>
-          <div className="db-stat-card__label">Safe</div>
-        </div>
-        <div className="db-stat-card">
-          <div className="db-stat-card__icon">⚠️</div>
-          <div className="db-stat-card__val">{safeRoutes.cautionLocations?.length || 0}</div>
-          <div className="db-stat-card__label">Caution</div>
-        </div>
-        <div className="db-stat-card">
-          <div className="db-stat-card__icon">🚫</div>
-          <div className="db-stat-card__val">{safeRoutes.blockedLocations?.length || 0}</div>
-          <div className="db-stat-card__label">Blocked</div>
-        </div>
-      </div>
+          {/* EMERGENCY GUIDE */}
+          <div className="db-emergency-guide">
+            <p className="db-section-title">🆘 EMERGENCY GUIDE</p>
+            <div className="db-guide-content">
+              <div className="db-guide-item">
+                <span className="db-guide-icon">🌊</span>
+                <div className="db-guide-text">
+                  <strong>Flood:</strong> Move to higher ground immediately. Avoid walking or driving through flood water.
+                </div>
+              </div>
+              <div className="db-guide-item">
+                <span className="db-guide-icon">🚧</span>
+                <div className="db-guide-text">
+                  <strong>Drain Blockage:</strong> Report to municipality. Avoid area until cleared.
+                </div>
+              </div>
+              <div className="db-guide-item">
+                <span className="db-guide-icon">⚠️</span>
+                <div className="db-guide-text">
+                  <strong>High Risk Zone:</strong> Follow evacuation orders. Keep emergency kit ready.
+                </div>
+              </div>
+            </div>
+            <div className="db-emergency-calls">
+              <p className="db-call-title">📞 EMERGENCY CONTACTS</p>
+              <div className="db-call-item">
+                <span className="db-call-number">112</span>
+                <span className="db-call-label">General Emergency</span>
+              </div>
+              <div className="db-call-item">
+                <span className="db-call-number">0800 11 222</span>
+                <span className="db-call-label">Municipality Helpdesk</span>
+              </div>
+              <div className="db-call-item">
+                <span className="db-call-number">+383 38 123 456</span>
+                <span className="db-call-label">Flood Response Unit</span>
+              </div>
+            </div>
+          </div>
+
+          {/* OVERVIEW STATS */}
+          {/* OVERVIEW STATS */}
+<div>
+  <p className="db-section-title">📊 OVERVIEW</p>
+  <div className="db-stat-grid">
+    <div className="db-stat-card">
+      <div className="db-stat-card__icon">📍</div>
+      <div className="db-stat-card__val">{locations.length}</div>
+      <div className="db-stat-card__label">Locations</div>
     </div>
-  )}
-</aside>
+    <div className="db-stat-card">
+      <div className="db-stat-card__icon">📋</div>
+      <div className="db-stat-card__val" style={{ color: alerts.length ? "#86efac" : "white" }}>
+        {alerts.length}
+      </div>
+      <div className="db-stat-card__label">Total Alerts</div>
+    </div>
+    <div className="db-stat-card">
+      <div className="db-stat-card__icon">🔴</div>
+      <div className="db-stat-card__val" style={{ color: highRiskCount ? "#fca5a5" : "white" }}>
+        {highRiskCount}
+      </div>
+      <div className="db-stat-card__label">High Risk</div>
+    </div>
+    <div className="db-stat-card">
+      <div className="db-stat-card__icon">🟡</div>
+      <div className="db-stat-card__val" style={{ color: mediumRiskCount ? "#fbbf24" : "white" }}>
+        {mediumRiskCount}
+      </div>
+      <div className="db-stat-card__label">Medium Risk</div>
+    </div>
+  </div>
+</div>
+
+          {/* RISK ZONES */}
+          <div>
+            <p className="db-section-title">🗺️ RISK ZONES</p>
+            <div className="db-zone-list">
+              {zones.map((z) => {
+                const c = riskColor(z.currentRiskLevel?.toLowerCase() || "low");
+                return (
+                  <div key={z.id} className="db-zone-item">
+                    <div className="db-zone-dot" style={{ background: c.fill }} />
+                    <span className="db-zone-name">{z.name}</span>
+                    <span className="db-zone-badge" style={{ background: c.fill + "25", color: c.fill }}>
+                      {riskLabel(z.currentRiskLevel)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ACTIVE ALERTS LIST */}
+          {totalActiveAlerts > 0 && (
+            <div>
+              <p className="db-section-title">🚨 ACTIVE ALERTS ({totalActiveAlerts})</p>
+              <div className="db-alert-list">
+                {alerts.slice(0, 5).map((a) => (
+                  <div key={a.id} className={`db-alert-item db-alert-item--${severityClass(a.riskLevel)}`}>
+                    <div className="db-alert-content">
+                      <p className="db-alert-title">{a.type}</p>
+                      <p className="db-alert-msg">{a.message?.substring(0, 50)}...</p>
+                      <p className="db-alert-location">📍 {a.locationName}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SAFE ROUTES SUMMARY */}
+          {safeRoutes && (
+            <div>
+              <p className="db-section-title">🛣️ SAFE ROUTES SUMMARY</p>
+              <div className="db-stat-grid">
+                <div className="db-stat-card">
+                  <div className="db-stat-card__icon">✅</div>
+                  <div className="db-stat-card__val">{safeRoutes.safeLocations?.length || 0}</div>
+                  <div className="db-stat-card__label">Safe</div>
+                </div>
+                <div className="db-stat-card">
+                  <div className="db-stat-card__icon">⚠️</div>
+                  <div className="db-stat-card__val">{safeRoutes.cautionLocations?.length || 0}</div>
+                  <div className="db-stat-card__label">Caution</div>
+                </div>
+                <div className="db-stat-card">
+                  <div className="db-stat-card__icon">🚫</div>
+                  <div className="db-stat-card__val">{safeRoutes.blockedLocations?.length || 0}</div>
+                  <div className="db-stat-card__label">Blocked</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );
