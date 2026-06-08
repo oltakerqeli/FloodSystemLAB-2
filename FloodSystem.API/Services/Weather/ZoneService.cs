@@ -15,9 +15,22 @@ namespace FloodSystem.API.Services.Weather
             _locationRepo = locationRepo;
         }
 
-        public async Task<IEnumerable<ZoneDto>> GetAllZonesAsync()
+        // ✅ NDRYSHO KËTË METODË - shto parametrin forAdmin
+        public async Task<IEnumerable<ZoneDto>> GetAllZonesAsync(bool forAdmin = false)
         {
-            var zones = await _zoneRepo.GetAllAsync();
+            IEnumerable<Zone> zones;
+            
+            if (forAdmin)
+            {
+                // Admin/Authority shohin TË GJITHA zonat
+                zones = await _zoneRepo.GetAllIncludingInactiveAsync();
+            }
+            else
+            {
+                // Përdoruesit normal shohin vetëm zonat aktive
+                zones = await _zoneRepo.GetAllAsync();
+            }
+            
             return zones.Select(z => new ZoneDto
             {
                 Id = z.Id,

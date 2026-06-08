@@ -24,6 +24,11 @@ namespace FloodSystem.API.Repositories.Weather.Implementations
             return await _context.Locations.Where(l => l.IsActive).ToListAsync();
         }
 
+        public async Task<IEnumerable<Location>> GetAllIncludingInactiveAsync()
+        {
+            return await _context.Locations.ToListAsync();
+        }
+
         public async Task<Location?> GetByNameAsync(string name)
         {
             return await _context.Locations.FirstOrDefaultAsync(l => l.Name == name);
@@ -47,14 +52,14 @@ namespace FloodSystem.API.Repositories.Weather.Implementations
         }
 
         public async Task<bool> DeleteAsync(int id)
-        {
-            var location = await GetByIdAsync(id);
-            if (location == null) return false;
-            location.IsActive = false;
-            location.UpdatedAt = DateTime.UtcNow;
-            _context.Locations.Update(location);
-            return true;
-        }
+{
+    var location = await GetByIdAsync(id);
+    if (location == null) return false;
+    
+    // HARD DELETE - fshije plotësisht nga database (jo soft delete)
+    _context.Locations.Remove(location);
+    return true;
+}
 
         public async Task<bool> ExistsAsync(int id)
         {

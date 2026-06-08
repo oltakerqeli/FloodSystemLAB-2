@@ -6,6 +6,7 @@ namespace FloodSystem.API.Repositories.Weather.Interfaces
     {
         Task<Location?> GetByIdAsync(int id);
         Task<IEnumerable<Location>> GetAllAsync();
+         Task<IEnumerable<Location>> GetAllIncludingInactiveAsync(); // ✅ METODË E RE
         Task<Location?> GetByNameAsync(string name);
         Task<IEnumerable<Location>> GetActiveLocationsAsync();
         Task<Location> AddAsync(Location location);

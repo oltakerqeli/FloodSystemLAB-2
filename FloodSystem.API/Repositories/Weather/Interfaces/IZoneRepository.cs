@@ -6,6 +6,7 @@ namespace FloodSystem.API.Repositories.Weather.Interfaces
     {
         Task<Zone?> GetByIdAsync(int id);
         Task<IEnumerable<Zone>> GetAllAsync();
+         Task<IEnumerable<Zone>> GetAllIncludingInactiveAsync(); 
         Task<Zone?> GetByNameAsync(string name);
         Task<Zone> AddAsync(Zone zone);
         Task<Zone> UpdateAsync(Zone zone);

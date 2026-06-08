@@ -76,15 +76,18 @@ export default function AdminPanelPage() {
     }
   };
 
-  const handleDeleteLocation = async (id) => {
-    if (!canDelete) return alert("Only Admin can delete");
-    if (window.confirm("Are you sure?")) {
-      await deleteLocation(id);
-      await loadData();
-      alert("Location deleted");
+const handleDeleteLocation = async (id) => {
+    if (!canDelete) return alert("You don't have permission");
+    if (window.confirm("Are you sure you want to permanently delete this location?")) {
+        try {
+            await deleteLocation(id);
+            await loadData(); // Ringarko listën
+            alert("Location permanently deleted");
+        } catch (error) {
+            alert("Failed to delete: " + error.message);
+        }
     }
-  };
-
+};
   const startEditLocation = (loc) => {
     setEditingLocation(loc);
     setForm({

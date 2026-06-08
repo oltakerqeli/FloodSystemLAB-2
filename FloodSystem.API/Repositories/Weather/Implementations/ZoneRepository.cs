@@ -19,9 +19,16 @@ namespace FloodSystem.API.Repositories.Weather.Implementations
             return await _context.Zones.FirstOrDefaultAsync(z => z.Id == id);
         }
 
+    
         public async Task<IEnumerable<Zone>> GetAllAsync()
         {
             return await _context.Zones.Where(z => z.IsActive).ToListAsync();
+        }
+
+       
+        public async Task<IEnumerable<Zone>> GetAllIncludingInactiveAsync()
+        {
+            return await _context.Zones.ToListAsync();
         }
 
         public async Task<Zone?> GetByNameAsync(string name)
@@ -42,13 +49,14 @@ namespace FloodSystem.API.Repositories.Weather.Implementations
             return zone;
         }
 
+        
         public async Task<bool> DeleteAsync(int id)
         {
             var zone = await GetByIdAsync(id);
             if (zone == null) return false;
-            zone.IsActive = false;
-            zone.UpdatedAt = DateTime.UtcNow;
-            _context.Zones.Update(zone);
+            
+            // Hard delete - fshije plotësisht nga database
+            _context.Zones.Remove(zone);
             return true;
         }
 

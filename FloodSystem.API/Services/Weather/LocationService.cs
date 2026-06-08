@@ -6,16 +6,29 @@ namespace FloodSystem.API.Services.Weather
 {
     public class LocationService
     {
-                private readonly ILocationRepository _locationRepo=null;
+        private readonly ILocationRepository _locationRepo;
 
         public LocationService(ILocationRepository locationRepo)
         {
             _locationRepo = locationRepo;
         }
 
-        public async Task<IEnumerable<LocationDto>> GetAllLocationsAsync()
+        // ✅ NDRYSHO KËTË METODË – Shto parametrin forAdmin
+        public async Task<IEnumerable<LocationDto>> GetAllLocationsAsync(bool forAdmin = false)
         {
-            var locations = await _locationRepo.GetAllAsync();
+            IEnumerable<Location> locations;
+            
+            if (forAdmin)
+            {
+                // Admin/Authority duhet të shohin TË GJITHA lokacionet (edhe të fshirat logjikisht)
+                locations = await _locationRepo.GetAllIncludingInactiveAsync();
+            }
+            else
+            {
+                // Përdoruesit normal shohin vetëm lokacionet aktive
+                locations = await _locationRepo.GetAllAsync();
+            }
+            
             return locations.Select(l => new LocationDto
             {
                 Id = l.Id,
