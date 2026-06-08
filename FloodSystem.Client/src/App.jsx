@@ -12,6 +12,8 @@ import WeatherPage from "./pages/weather/WeatherPage";
 import AlertsPage from "./pages/weather/AlertsPage";
 import AdminPanelPage from "./pages/admin/AdminPanelPage";
 import DynamicReportPage from "./pages/reports/DynamicReportPage";
+import TrafficPage from "./pages/weather/TrafficPage";
+import SafeRoutesPage from "./pages/weather/SafeRoutesPage";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -56,6 +58,8 @@ function App() {
         <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/weather" element={<ProtectedRoute><WeatherPage /></ProtectedRoute>} />
         <Route path="/alerts" element={<ProtectedRoute><AlertsPage /></ProtectedRoute>} />
+        <Route path="/traffic" element={<ProtectedRoute><TrafficPage /></ProtectedRoute>} />
+<Route path="/safe-routes" element={<ProtectedRoute><SafeRoutesPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute requiredRole="Admin"><AdminPanelPage /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
