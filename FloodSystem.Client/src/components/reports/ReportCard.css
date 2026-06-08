@@ -176,3 +176,7 @@
   margin: 0;
   line-height: 1.5;
 }
+.export-select option {
+  background: #0d2252;
+  color: white;
+}

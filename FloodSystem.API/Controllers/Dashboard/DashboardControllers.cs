@@ -61,16 +61,16 @@ public class DashboardController : ControllerBase
     [HttpPost("export")]
     public async Task<IActionResult> CreateExport([FromBody] CreateExportDto dto)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var result = await _service.CreateExportAsync(dto, userId);
-        return Ok(result);
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    var fileResult = await _service.ExportReportsAsync(dto, userId);
+    return File(fileResult.Content, fileResult.ContentType, fileResult.FileName);
     }
 
     [HttpPost("import")]
-    public async Task<IActionResult> CreateImport([FromBody] CreateImportDto dto)
-    {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        var result = await _service.CreateImportAsync(dto, userId);
-        return Ok(result);
-    }
+public async Task<IActionResult> ImportData([FromForm] IFormFile file, [FromForm] string type)
+{
+    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    var result = await _service.ImportDataAsync(file, type, userId);
+    return Ok(result);
+}
 }

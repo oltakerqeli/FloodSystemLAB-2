@@ -6,7 +6,7 @@ namespace FloodSystem.API.Services.Weather
 {
     public class LocationService
     {
-                private readonly ILocationRepository _locationRepo=null;
+                private readonly ILocationRepository _locationRepo=null!;
 
         public LocationService(ILocationRepository locationRepo)
         {

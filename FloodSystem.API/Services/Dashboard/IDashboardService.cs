@@ -10,6 +10,6 @@ public interface IDashboardService
     Task MarkNotificationAsReadAsync(int id);
     Task<List<SettingDto>> GetAllSettingsAsync();
     Task UpdateSettingAsync(int id, string value);
-    Task<ExportDto> CreateExportAsync(CreateExportDto dto, int userId);
-    Task<ImportDto> CreateImportAsync(CreateImportDto dto, int userId);
+    Task<ExportFileResult> ExportReportsAsync(CreateExportDto dto, int userId);
+    Task<ImportDto> ImportDataAsync(IFormFile file, string type, int userId);
 }
