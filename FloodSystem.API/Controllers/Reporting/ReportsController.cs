@@ -48,10 +48,23 @@ public async Task<IActionResult> GetDrainReports()
     return Ok(await _service.GetAllDrainReportsAsync(userId));
 }
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Admin,Authority")]
+    [Authorize(Roles = "Authority")]
     public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
     {
         await _service.UpdateReportStatusAsync(id, statusId, type);
         return NoContent();
     }
+    [HttpGet("flood/all")]
+[Authorize(Roles = "Admin,Authority")]
+public async Task<IActionResult> GetAllFloodReports()
+{
+    return Ok(await _service.GetAllFloodReportsAsync());
+}
+
+[HttpGet("drain/all")]
+[Authorize(Roles = "Admin,Authority")]
+public async Task<IActionResult> GetAllDrainReports()
+{
+    return Ok(await _service.GetAllDrainReportsAsync());
+}
 }

@@ -8,5 +8,7 @@ public interface IReportRepository
     Task<FloodReport> CreateFloodReportAsync(FloodReport report);
     Task<DrainReport> CreateDrainReportAsync(DrainReport report);
     Task<List<DrainReport>> GetAllDrainReportsAsync(int userId);
+    Task<List<FloodReport>> GetAllFloodReportsAsync();
+    Task<List<DrainReport>> GetAllDrainReportsAsync();
     Task UpdateReportStatusAsync(int id, int statusId, string type);
 }

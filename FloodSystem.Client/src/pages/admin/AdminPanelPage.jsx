@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getLocations, createLocation, updateLocation, deleteLocation, getZones, createZone, updateZone, deleteZone } from "../../services/weatherService";
 import { useAuth } from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import "./AdminPanelPage.css";
 
 export default function AdminPanelPage() {
@@ -13,6 +14,9 @@ export default function AdminPanelPage() {
   const [loading, setLoading] = useState(true);
   const [editingLocation, setEditingLocation] = useState(null);
   const [editingZone, setEditingZone] = useState(null);
+  const [allFloodReports, setAllFloodReports] = useState([]);
+  const [allDrainReports, setAllDrainReports] = useState([]);
+  const [reportsTab, setReportsTab] = useState("drain");
   const [form, setForm] = useState({ name: "", description: "", latitude: "", longitude: "" });
   const [zoneForm, setZoneForm] = useState({ name: "", description: "", criticalRainfallThreshold: 10 });
 
@@ -27,6 +31,11 @@ export default function AdminPanelPage() {
       const [l, z] = await Promise.all([getLocations(), getZones()]);
       setLocations(Array.isArray(l) ? l : []);
       setZones(Array.isArray(z) ? z : []);
+
+      const floodRes = await fetch(`${API_BASE_URL}/Reports/flood/all`, { credentials: "include" });
+      const drainRes = await fetch(`${API_BASE_URL}/Reports/drain/all`, { credentials: "include" });
+      if (floodRes.ok) setAllFloodReports(await floodRes.json());
+      if (drainRes.ok) setAllDrainReports(await drainRes.json());
     } catch (error) {
       console.error("Failed to load data:", error);
     } finally {
@@ -38,7 +47,19 @@ export default function AdminPanelPage() {
     loadData();
   }, [loadData]);
 
-  // LOCATION CRUD
+  const handleStatusChange = async (id, statusId, type) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/Reports/${id}/status?statusId=${statusId}&type=${type}`,
+        { method: "PATCH", credentials: "include" }
+      );
+      if (!response.ok) throw new Error("Failed");
+      await loadData();
+    } catch (err) {
+      alert("Failed to update status");
+    }
+  };
+
   const handleCreateLocation = async (e) => {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
@@ -81,13 +102,14 @@ export default function AdminPanelPage() {
     if (window.confirm("Are you sure you want to permanently delete this location?")) {
       try {
         await deleteLocation(id);
-        await loadData(); // Ringarko listën
+        await loadData();
         alert("Location permanently deleted");
       } catch (error) {
         alert("Failed to delete: " + error.message);
       }
     }
   };
+
   const startEditLocation = (loc) => {
     setEditingLocation(loc);
     setForm({
@@ -103,7 +125,6 @@ export default function AdminPanelPage() {
     setForm({ name: "", description: "", latitude: "", longitude: "" });
   };
 
-  // ZONE CRUD
   const handleCreateZone = async (e) => {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
@@ -177,16 +198,14 @@ export default function AdminPanelPage() {
           <button className={`admin-tab ${activeTab === "zones" ? "active" : ""}`} onClick={() => setActiveTab("zones")}>
             🗺️ Zones ({zones.length})
           </button>
-
-          <button
-            className={`admin-tab ${activeTab === "users" ? "active" : ""}`}
-            onClick={() => navigate("/admin/users")}
-          >
+          <button className={`admin-tab ${activeTab === "reports" ? "active" : ""}`} onClick={() => setActiveTab("reports")}>
+            📋 Reports ({allFloodReports.length + allDrainReports.length})
+          </button>
+          <button className={`admin-tab ${activeTab === "users" ? "active" : ""}`} onClick={() => navigate("/admin/users")}>
             👥 Manage Users
           </button>
         </div>
 
-        {/* LOCATIONS TAB */}
         {activeTab === "locations" && (
           <div className="admin-section">
             {canEdit && (
@@ -202,7 +221,6 @@ export default function AdminPanelPage() {
                 </div>
               </form>
             )}
-
             <div className="admin-list">
               <h3>Existing Locations</h3>
               {loading ? <div>Loading...</div> : locations.map(loc => (
@@ -222,7 +240,6 @@ export default function AdminPanelPage() {
           </div>
         )}
 
-        {/* ZONES TAB */}
         {activeTab === "zones" && (
           <div className="admin-section">
             {canEdit && (
@@ -237,7 +254,6 @@ export default function AdminPanelPage() {
                 </div>
               </form>
             )}
-
             <div className="admin-list">
               <h3>Existing Zones</h3>
               {loading ? <div>Loading...</div> : zones.map(zone => (
@@ -250,6 +266,54 @@ export default function AdminPanelPage() {
                   <div style={{ display: "flex", gap: "8px" }}>
                     {canEdit && <button className="admin-edit" onClick={() => startEditZone(zone)}>Edit</button>}
                     {canDelete && <button className="admin-delete" onClick={() => handleDeleteZone(zone.id)}>Delete</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "reports" && (
+          <div className="admin-section">
+            <div className="admin-tabs" style={{ marginBottom: "16px" }}>
+              <button className={`admin-tab ${reportsTab === "drain" ? "active" : ""}`} onClick={() => setReportsTab("drain")}>
+                🚧 Drain Reports ({allDrainReports.length})
+              </button>
+              <button className={`admin-tab ${reportsTab === "flood" ? "active" : ""}`} onClick={() => setReportsTab("flood")}>
+                🌊 Flood Reports ({allFloodReports.length})
+              </button>
+            </div>
+            <div className="admin-list">
+              {(reportsTab === "drain" ? allDrainReports : allFloodReports).map(report => (
+                <div key={report.id} className="admin-item">
+                  <div>
+                    <strong>{report.description}</strong>
+                    <span className="admin-desc">📍 {report.street}, {report.district}</span>
+                    <span className="admin-desc">⚠️ Severity: {report.severity}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <span style={{
+                      fontSize: "11px", fontWeight: "700", padding: "4px 10px",
+                      borderRadius: "20px", background: "rgba(255,255,255,0.1)",
+                      color: "white"
+                    }}>
+                      {report.status}
+                    </span>
+                    <select
+                      value=""
+                      onChange={(e) => handleStatusChange(report.id, e.target.value, reportsTab === "drain" ? "Drain" : "Flood")}
+                      style={{
+                        padding: "4px 8px", borderRadius: "8px",
+                        background: "rgba(255,255,255,0.1)",
+                        border: "1px solid rgba(255,255,255,0.2)",
+                        color: "white", fontSize: "12px"
+                      }}
+                    >
+                      <option value="">Change status</option>
+                      <option value="1">Pending</option>
+                      <option value="2">Reviewed</option>
+                      <option value="3">Resolved</option>
+                    </select>
                   </div>
                 </div>
               ))}

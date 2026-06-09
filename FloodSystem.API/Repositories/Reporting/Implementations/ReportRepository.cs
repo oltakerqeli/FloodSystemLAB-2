@@ -52,4 +52,9 @@ public class ReportRepository : IReportRepository
         }
         await _context.SaveChangesAsync();
     }
+    public async Task<List<FloodReport>> GetAllFloodReportsAsync()
+    => await _context.FloodReports.Include(r => r.Status).ToListAsync();
+
+public async Task<List<DrainReport>> GetAllDrainReportsAsync()
+    => await _context.DrainReports.Include(r => r.Status).Include(r => r.File).ToListAsync();
 }

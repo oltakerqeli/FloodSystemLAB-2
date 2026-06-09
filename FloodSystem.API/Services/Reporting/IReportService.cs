@@ -8,5 +8,7 @@ public interface IReportService
     Task<ReportResponseDto> CreateDrainReportAsync(CreateDrainReportDto dto, int userId);
     Task<List<ReportResponseDto>> GetAllFloodReportsAsync(int userId);
     Task<List<ReportResponseDto>> GetAllDrainReportsAsync(int userId);
+    Task<List<ReportResponseDto>> GetAllFloodReportsAsync();
+    Task<List<ReportResponseDto>> GetAllDrainReportsAsync();
     Task UpdateReportStatusAsync(int id, int statusId, string type);
 }

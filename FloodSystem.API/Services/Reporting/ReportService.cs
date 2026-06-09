@@ -170,4 +170,44 @@ public class ReportService : IReportService
 
     public async Task UpdateReportStatusAsync(int id, int statusId, string type)
         => await _repo.UpdateReportStatusAsync(id, statusId, type);
+
+        public async Task<List<ReportResponseDto>> GetAllFloodReportsAsync()
+{
+    var reports = await _repo.GetAllFloodReportsAsync();
+    return reports.Select(r => new ReportResponseDto
+    {
+        Id = r.Id,
+        LocationId = r.LocationId,
+        Description = r.Description,
+        Street = r.Street,
+        District = r.District,
+        Severity = r.Severity,
+        LocationName = r.LocationName,
+        WaterLevelCm = r.WaterLevelCm,
+        Status = r.Status.Name,
+        ReportType = "Flood",
+        CreatedAt = r.CreatedAt
+    }).ToList();
+}
+
+public async Task<List<ReportResponseDto>> GetAllDrainReportsAsync()
+{
+    var reports = await _repo.GetAllDrainReportsAsync();
+    return reports.Select(r => new ReportResponseDto
+    {
+        Id = r.Id,
+        LocationId = r.LocationId,
+        Description = r.Description,
+        Street = r.Street,
+        District = r.District,
+        Severity = r.Severity,
+        ReporterName = r.ReporterName,
+        Status = r.Status.Name,
+        ReportType = "Drain",
+        CreatedAt = r.CreatedAt,
+        PhotoUrl = r.File != null
+            ? $"/uploads/{Path.GetFileName(r.File.FilePath)}"
+            : null
+    }).ToList();
+}
 }
