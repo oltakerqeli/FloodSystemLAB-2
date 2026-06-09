@@ -51,6 +51,17 @@ namespace FloodSystem.API.Repositories.Auth.Implementations
         {
             await _context.UserRoles.AddAsync(userRole);
         }
+        public async Task<List<UserRole>> GetUserRolesAsync(int userId)
+        {
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .ToListAsync();
+        }
+
+        public void RemoveUserRoles(List<UserRole> userRoles)
+        {
+            _context.UserRoles.RemoveRange(userRoles);
+        }
 
         public async Task SaveChangesAsync()
         {

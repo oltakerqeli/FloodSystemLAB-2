@@ -61,6 +61,21 @@ namespace FloodSystem.API.Services.Auth
             return "User deactivated successfully.";
         }
 
+        public async Task<string> ActivateUserAsync(int id)
+        {
+            var user = await _userRepository.GetUserByIdSimpleAsync(id);
+
+            if (user == null)
+                return "User not found.";
+
+            user.IsActive = true;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.SaveChangesAsync();
+
+            return "User activated successfully.";
+        }
+
         public async Task<string> AssignRoleAsync(int id, AssignRoleDto dto)
         {
             var user = await _userRepository.GetUserByIdSimpleAsync(id);
@@ -73,10 +88,12 @@ namespace FloodSystem.API.Services.Auth
             if (role == null)
                 return "Role not found.";
 
-            var existingRole = await _userRepository.GetUserRoleAsync(id, role.Id);
+            var userRoles = await _userRepository.GetUserRolesAsync(id);
 
-            if (existingRole != null)
+            if (userRoles.Count == 1 && userRoles.Any(ur => ur.RoleId == role.Id))
                 return "User already has this role.";
+
+            _userRepository.RemoveUserRoles(userRoles);
 
             await _userRepository.AddUserRoleAsync(new UserRole
             {
@@ -87,7 +104,7 @@ namespace FloodSystem.API.Services.Auth
 
             await _userRepository.SaveChangesAsync();
 
-            return "Role assigned successfully.";
+            return $"User role changed to {role.Name}.";
         }
     }
 }

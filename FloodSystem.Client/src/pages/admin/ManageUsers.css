@@ -1,0 +1,124 @@
+.manage-users-page {
+  min-height: 100vh;
+  background: #071122;
+  padding: 40px;
+  color: #f8fafc;
+}
+
+.manage-users-container {
+  background: #111c31;
+  border: 1px solid #26364f;
+  border-radius: 22px;
+  padding: 28px;
+}
+
+.manage-users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.manage-users-header h1 {
+  margin: 0;
+}
+
+.back-btn {
+  background: #29364d;
+  color: white;
+  border: 1px solid #465670;
+  border-radius: 14px;
+  padding: 12px 24px;
+  cursor: pointer;
+}
+
+.manage-users-table-wrapper {
+  overflow-x: auto;
+}
+
+.manage-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0f172a;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.manage-users-table th {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 14px;
+  text-align: center;
+}
+
+.manage-users-table td {
+  padding: 14px;
+  text-align: center;
+  border-bottom: 1px solid #26364f;
+  color: #e5e7eb;
+}
+
+.manage-users-table tr:hover {
+  background: #16233a;
+}
+
+.btn-deactivate {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.btn-authority {
+  background: #0284c7;
+  color: white;
+}
+
+.btn-user {
+  background: #475569;
+  color: white;
+}
+
+.btn-action {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 2px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 85px;
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.manage-users-message {
+  background: #0c4a6e;
+  border: 1px solid #0284c7;
+  color: #e0f2fe;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.role-select {
+  background: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+
+.role-select:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.btn-activate {
+  background: #16a34a;
+  color: white;
+}

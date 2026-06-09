@@ -46,6 +46,17 @@ namespace FloodSystem.API.Controllers.Auth
             return Ok(new { message = result });
         }
 
+        [HttpPut("{id}/activate")]
+        public async Task<IActionResult> ActivateUser(int id)
+        {
+            var result = await _userService.ActivateUserAsync(id);
+
+            if (result == "User not found.")
+                return NotFound(new { message = result });
+
+            return Ok(new { message = result });
+        }
+
         [HttpPut("{id}/assign-role")]
         public async Task<IActionResult> AssignRole(int id, AssignRoleDto dto)
         {

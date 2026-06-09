@@ -10,6 +10,8 @@ namespace FloodSystem.API.Repositories.Auth.Interfaces
         Task<Role?> GetRoleByNameAsync(string roleName);
         Task<UserRole?> GetUserRoleAsync(int userId, int roleId);
         Task AddUserRoleAsync(UserRole userRole);
+        Task<List<UserRole>> GetUserRolesAsync(int userId);
+        void RemoveUserRoles(List<UserRole> userRoles);
         Task SaveChangesAsync();
     }
 }

@@ -76,18 +76,18 @@ export default function AdminPanelPage() {
     }
   };
 
-const handleDeleteLocation = async (id) => {
+  const handleDeleteLocation = async (id) => {
     if (!canDelete) return alert("You don't have permission");
     if (window.confirm("Are you sure you want to permanently delete this location?")) {
-        try {
-            await deleteLocation(id);
-            await loadData(); // Ringarko listën
-            alert("Location permanently deleted");
-        } catch (error) {
-            alert("Failed to delete: " + error.message);
-        }
+      try {
+        await deleteLocation(id);
+        await loadData(); // Ringarko listën
+        alert("Location permanently deleted");
+      } catch (error) {
+        alert("Failed to delete: " + error.message);
+      }
     }
-};
+  };
   const startEditLocation = (loc) => {
     setEditingLocation(loc);
     setForm({
@@ -176,6 +176,13 @@ const handleDeleteLocation = async (id) => {
           </button>
           <button className={`admin-tab ${activeTab === "zones" ? "active" : ""}`} onClick={() => setActiveTab("zones")}>
             🗺️ Zones ({zones.length})
+          </button>
+
+          <button
+            className={`admin-tab ${activeTab === "users" ? "active" : ""}`}
+            onClick={() => navigate("/admin/users")}
+          >
+            👥 Manage Users
           </button>
         </div>
 
