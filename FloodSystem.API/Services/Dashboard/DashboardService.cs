@@ -1,6 +1,7 @@
 using FloodSystem.API.DTOs.Dashboard;
 using FloodSystem.API.Models.Dashboard;
 using FloodSystem.API.Repositories.Dashboard;
+using FloodSystem.API.MongoDB;
 using ClosedXML.Excel;
 using FloodSystem.API.Data;
 using Microsoft.EntityFrameworkCore;
@@ -11,11 +12,13 @@ public class DashboardService : IDashboardService
 {
     private readonly IDashboardRepository _repo;
     private readonly ApplicationDbContext _context;
+    private readonly MongoDbService _mongo;
 
-    public DashboardService(IDashboardRepository repo, ApplicationDbContext context)
+    public DashboardService(IDashboardRepository repo, ApplicationDbContext context, MongoDbService mongo)
     {
         _repo = repo;
         _context = context;
+        _mongo = mongo;
     }
 
     public async Task<List<AuditLogDto>> GetAllAuditLogsAsync()
@@ -59,6 +62,15 @@ public class DashboardService : IDashboardService
             Message = dto.Message
         };
         await _repo.CreateNotificationAsync(notification);
+
+        await _mongo.GetCollection<ActivityLog>("activity_logs")
+            .InsertOneAsync(new ActivityLog
+            {
+                UserId = dto.UserId,
+                Action = "CREATE_NOTIFICATION",
+                Entity = "Notifications",
+                Time = DateTime.UtcNow.ToString()
+            });
     }
 
     public async Task MarkNotificationAsReadAsync(int id)
@@ -83,6 +95,15 @@ public class DashboardService : IDashboardService
     {
         var import = new Import { UserId = userId, Type = type, Format = Path.GetExtension(file.FileName).TrimStart('.') };
         await _repo.CreateImportAsync(import);
+
+        await _mongo.GetCollection<ActivityLog>("activity_logs")
+            .InsertOneAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = "IMPORT_DATA",
+                Entity = type,
+                Time = DateTime.UtcNow.ToString()
+            });
 
         var extension = Path.GetExtension(file.FileName).ToLower();
 
@@ -237,6 +258,15 @@ public class DashboardService : IDashboardService
     {
         var export = new Export { UserId = userId, Type = dto.Type, Format = dto.Format };
         await _repo.CreateExportAsync(export);
+
+        await _mongo.GetCollection<ActivityLog>("activity_logs")
+            .InsertOneAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = "EXPORT_DATA",
+                Entity = dto.Type,
+                Time = DateTime.UtcNow.ToString()
+            });
 
         var format = dto.Format.ToLower();
         var type = dto.Type.ToLower();
@@ -452,163 +482,173 @@ public class DashboardService : IDashboardService
         var created = await _repo.CreateExportAsync(export);
         return new ExportDto { Id = created.Id, Type = created.Type, Format = created.Format, CreatedAt = created.CreatedAt };
     }
+
     public async Task<ExportFileResult> GenerateDynamicReportAsync(DynamicReportDto dto, int userId)
-{
-    var floodQuery = _context.FloodReports.Include(r => r.Status).Where(r => r.UserId == userId);
-    var drainQuery = _context.DrainReports.Include(r => r.Status).Where(r => r.UserId == userId);
-
-    if (dto.DateFrom.HasValue)
     {
-        floodQuery = floodQuery.Where(r => r.CreatedAt >= dto.DateFrom.Value);
-        drainQuery = drainQuery.Where(r => r.CreatedAt >= dto.DateFrom.Value);
-    }
+        var floodQuery = _context.FloodReports.Include(r => r.Status).Where(r => r.UserId == userId);
+        var drainQuery = _context.DrainReports.Include(r => r.Status).Where(r => r.UserId == userId);
 
-    if (dto.DateTo.HasValue)
-{
-    floodQuery = floodQuery.Where(r => r.CreatedAt <= dto.DateTo.Value.AddDays(1));
-    drainQuery = drainQuery.Where(r => r.CreatedAt <= dto.DateTo.Value.AddDays(1));
-}
-
-    if (!string.IsNullOrEmpty(dto.Severity))
-    {
-        floodQuery = floodQuery.Where(r => r.Severity.ToLower() == dto.Severity.ToLower());
-        drainQuery = drainQuery.Where(r => r.Severity.ToLower() == dto.Severity.ToLower());
-    }
-
-    if (!string.IsNullOrEmpty(dto.Status))
-    {
-        floodQuery = floodQuery.Where(r => r.Status.Name.ToLower() == dto.Status.ToLower());
-        drainQuery = drainQuery.Where(r => r.Status.Name.ToLower() == dto.Status.ToLower());
-    }
-
-    var floodReports = dto.ReportType.ToLower() == "drain"
-        ? new List<FloodSystem.API.Models.Reporting.FloodReport>()
-        : await floodQuery.ToListAsync();
-
-    var drainReports = dto.ReportType.ToLower() == "flood"
-        ? new List<FloodSystem.API.Models.Reporting.DrainReport>()
-        : await drainQuery.ToListAsync();
-
-    var format = dto.Format.ToLower();
-
-    if (format == "csv")
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"Dynamic Report - Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}");
-        sb.AppendLine($"Type: {dto.ReportType} | Severity: {dto.Severity ?? "All"} | Status: {dto.Status ?? "All"}");
-        sb.AppendLine();
-
-        if (floodReports.Any())
+        if (dto.DateFrom.HasValue)
         {
-            sb.AppendLine("=== FLOOD REPORTS ===");
-            sb.AppendLine("Id,Description,Street,District,Severity,Status,WaterLevel,CreatedAt");
-            foreach (var r in floodReports)
-                sb.AppendLine($"{r.Id},\"{r.Description}\",\"{r.Street}\",\"{r.District}\",{r.Severity},{r.Status.Name},{r.WaterLevelCm},{r.CreatedAt:yyyy-MM-dd}");
+            floodQuery = floodQuery.Where(r => r.CreatedAt >= dto.DateFrom.Value);
+            drainQuery = drainQuery.Where(r => r.CreatedAt >= dto.DateFrom.Value);
+        }
+
+        if (dto.DateTo.HasValue)
+        {
+            floodQuery = floodQuery.Where(r => r.CreatedAt <= dto.DateTo.Value.AddDays(1));
+            drainQuery = drainQuery.Where(r => r.CreatedAt <= dto.DateTo.Value.AddDays(1));
+        }
+
+        if (!string.IsNullOrEmpty(dto.Severity))
+        {
+            floodQuery = floodQuery.Where(r => r.Severity.ToLower() == dto.Severity.ToLower());
+            drainQuery = drainQuery.Where(r => r.Severity.ToLower() == dto.Severity.ToLower());
+        }
+
+        if (!string.IsNullOrEmpty(dto.Status))
+        {
+            floodQuery = floodQuery.Where(r => r.Status.Name.ToLower() == dto.Status.ToLower());
+            drainQuery = drainQuery.Where(r => r.Status.Name.ToLower() == dto.Status.ToLower());
+        }
+
+        var floodReports = dto.ReportType.ToLower() == "drain"
+            ? new List<FloodSystem.API.Models.Reporting.FloodReport>()
+            : await floodQuery.ToListAsync();
+
+        var drainReports = dto.ReportType.ToLower() == "flood"
+            ? new List<FloodSystem.API.Models.Reporting.DrainReport>()
+            : await drainQuery.ToListAsync();
+
+        await _mongo.GetCollection<ActivityLog>("activity_logs")
+            .InsertOneAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = "GENERATE_DYNAMIC_REPORT",
+                Entity = dto.ReportType,
+                Time = DateTime.UtcNow.ToString()
+            });
+
+        var format = dto.Format.ToLower();
+
+        if (format == "csv")
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Dynamic Report - Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}");
+            sb.AppendLine($"Type: {dto.ReportType} | Severity: {dto.Severity ?? "All"} | Status: {dto.Status ?? "All"}");
             sb.AppendLine();
-        }
 
-        if (drainReports.Any())
-        {
-            sb.AppendLine("=== DRAIN REPORTS ===");
-            sb.AppendLine("Id,Description,Street,District,Severity,Status,CreatedAt");
-            foreach (var r in drainReports)
-                sb.AppendLine($"{r.Id},\"{r.Description}\",\"{r.Street}\",\"{r.District}\",{r.Severity},{r.Status.Name},{r.CreatedAt:yyyy-MM-dd}");
-        }
-
-        return new ExportFileResult
-        {
-            Content = System.Text.Encoding.UTF8.GetBytes(sb.ToString()),
-            ContentType = "text/csv",
-            FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.csv"
-        };
-    }
-    else if (format == "excel")
-    {
-        using var workbook = new XLWorkbook();
-
-        var summary = workbook.Worksheets.Add("Summary");
-        summary.Cell(1, 1).Value = "Dynamic Report";
-        summary.Cell(1, 1).Style.Font.Bold = true;
-        summary.Cell(1, 1).Style.Font.FontSize = 16;
-        summary.Cell(2, 1).Value = $"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
-        summary.Cell(3, 1).Value = $"Report Type: {dto.ReportType}";
-        summary.Cell(4, 1).Value = $"Date From: {dto.DateFrom?.ToString("yyyy-MM-dd") ?? "All"}";
-        summary.Cell(5, 1).Value = $"Date To: {dto.DateTo?.ToString("yyyy-MM-dd") ?? "All"}";
-        summary.Cell(6, 1).Value = $"Severity: {dto.Severity ?? "All"}";
-        summary.Cell(7, 1).Value = $"Status: {dto.Status ?? "All"}";
-        summary.Cell(9, 1).Value = $"Total Flood Reports: {floodReports.Count}";
-        summary.Cell(10, 1).Value = $"Total Drain Reports: {drainReports.Count}";
-        summary.Cell(11, 1).Value = $"Total Reports: {floodReports.Count + drainReports.Count}";
-        summary.Columns().AdjustToContents();
-
-        if (floodReports.Any())
-        {
-            var ws = workbook.Worksheets.Add("Flood Reports");
-            AddExcelHeaders(ws, new[] { "Id", "Description", "Street", "District", "Severity", "Status", "Water Level", "Created At" }, "#1e3a5f");
-            var row = 2;
-            foreach (var r in floodReports)
+            if (floodReports.Any())
             {
-                ws.Cell(row, 1).Value = r.Id;
-                ws.Cell(row, 2).Value = r.Description;
-                ws.Cell(row, 3).Value = r.Street;
-                ws.Cell(row, 4).Value = r.District;
-                ws.Cell(row, 5).Value = r.Severity;
-                ws.Cell(row, 6).Value = r.Status.Name;
-                ws.Cell(row, 7).Value = (double)r.WaterLevelCm;
-                ws.Cell(row, 8).Value = r.CreatedAt.ToString("yyyy-MM-dd");
-                StyleExcelRow(ws, row, 8, row % 2 == 0 ? "#dbeafe" : "#ffffff");
-                row++;
+                sb.AppendLine("=== FLOOD REPORTS ===");
+                sb.AppendLine("Id,Description,Street,District,Severity,Status,WaterLevel,CreatedAt");
+                foreach (var r in floodReports)
+                    sb.AppendLine($"{r.Id},\"{r.Description}\",\"{r.Street}\",\"{r.District}\",{r.Severity},{r.Status.Name},{r.WaterLevelCm},{r.CreatedAt:yyyy-MM-dd}");
+                sb.AppendLine();
             }
-            ws.Columns().AdjustToContents();
-        }
 
-        if (drainReports.Any())
-        {
-            var ws = workbook.Worksheets.Add("Drain Reports");
-            AddExcelHeaders(ws, new[] { "Id", "Description", "Street", "District", "Severity", "Status", "Created At" }, "#1e3a5f");
-            var row = 2;
-            foreach (var r in drainReports)
+            if (drainReports.Any())
             {
-                ws.Cell(row, 1).Value = r.Id;
-                ws.Cell(row, 2).Value = r.Description;
-                ws.Cell(row, 3).Value = r.Street;
-                ws.Cell(row, 4).Value = r.District;
-                ws.Cell(row, 5).Value = r.Severity;
-                ws.Cell(row, 6).Value = r.Status.Name;
-                ws.Cell(row, 7).Value = r.CreatedAt.ToString("yyyy-MM-dd");
-                StyleExcelRow(ws, row, 7, row % 2 == 0 ? "#fef9c3" : "#ffffff");
-                row++;
+                sb.AppendLine("=== DRAIN REPORTS ===");
+                sb.AppendLine("Id,Description,Street,District,Severity,Status,CreatedAt");
+                foreach (var r in drainReports)
+                    sb.AppendLine($"{r.Id},\"{r.Description}\",\"{r.Street}\",\"{r.District}\",{r.Severity},{r.Status.Name},{r.CreatedAt:yyyy-MM-dd}");
             }
-            ws.Columns().AdjustToContents();
+
+            return new ExportFileResult
+            {
+                Content = System.Text.Encoding.UTF8.GetBytes(sb.ToString()),
+                ContentType = "text/csv",
+                FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.csv"
+            };
         }
+        else if (format == "excel")
+        {
+            using var workbook = new XLWorkbook();
 
-        using var ms = new MemoryStream();
-        workbook.SaveAs(ms);
-        return new ExportFileResult
-        {
-            Content = ms.ToArray(),
-            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.xlsx"
-        };
-    }
-    else
-    {
-        var data = new
-        {
-            generatedAt = DateTime.UtcNow,
-            filters = new { dto.ReportType, dto.DateFrom, dto.DateTo, dto.Severity, dto.Status },
-            summary = new { totalFlood = floodReports.Count, totalDrain = drainReports.Count, total = floodReports.Count + drainReports.Count },
-            floodReports = floodReports.Select(r => new { r.Id, r.Description, r.Street, r.District, r.Severity, status = r.Status.Name, r.WaterLevelCm, r.CreatedAt }),
-            drainReports = drainReports.Select(r => new { r.Id, r.Description, r.Street, r.District, r.Severity, status = r.Status.Name, r.CreatedAt })
-        };
+            var summary = workbook.Worksheets.Add("Summary");
+            summary.Cell(1, 1).Value = "Dynamic Report";
+            summary.Cell(1, 1).Style.Font.Bold = true;
+            summary.Cell(1, 1).Style.Font.FontSize = 16;
+            summary.Cell(2, 1).Value = $"Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+            summary.Cell(3, 1).Value = $"Report Type: {dto.ReportType}";
+            summary.Cell(4, 1).Value = $"Date From: {dto.DateFrom?.ToString("yyyy-MM-dd") ?? "All"}";
+            summary.Cell(5, 1).Value = $"Date To: {dto.DateTo?.ToString("yyyy-MM-dd") ?? "All"}";
+            summary.Cell(6, 1).Value = $"Severity: {dto.Severity ?? "All"}";
+            summary.Cell(7, 1).Value = $"Status: {dto.Status ?? "All"}";
+            summary.Cell(9, 1).Value = $"Total Flood Reports: {floodReports.Count}";
+            summary.Cell(10, 1).Value = $"Total Drain Reports: {drainReports.Count}";
+            summary.Cell(11, 1).Value = $"Total Reports: {floodReports.Count + drainReports.Count}";
+            summary.Columns().AdjustToContents();
 
-        var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        return new ExportFileResult
+            if (floodReports.Any())
+            {
+                var ws = workbook.Worksheets.Add("Flood Reports");
+                AddExcelHeaders(ws, new[] { "Id", "Description", "Street", "District", "Severity", "Status", "Water Level", "Created At" }, "#1e3a5f");
+                var row = 2;
+                foreach (var r in floodReports)
+                {
+                    ws.Cell(row, 1).Value = r.Id;
+                    ws.Cell(row, 2).Value = r.Description;
+                    ws.Cell(row, 3).Value = r.Street;
+                    ws.Cell(row, 4).Value = r.District;
+                    ws.Cell(row, 5).Value = r.Severity;
+                    ws.Cell(row, 6).Value = r.Status.Name;
+                    ws.Cell(row, 7).Value = (double)r.WaterLevelCm;
+                    ws.Cell(row, 8).Value = r.CreatedAt.ToString("yyyy-MM-dd");
+                    StyleExcelRow(ws, row, 8, row % 2 == 0 ? "#dbeafe" : "#ffffff");
+                    row++;
+                }
+                ws.Columns().AdjustToContents();
+            }
+
+            if (drainReports.Any())
+            {
+                var ws = workbook.Worksheets.Add("Drain Reports");
+                AddExcelHeaders(ws, new[] { "Id", "Description", "Street", "District", "Severity", "Status", "Created At" }, "#1e3a5f");
+                var row = 2;
+                foreach (var r in drainReports)
+                {
+                    ws.Cell(row, 1).Value = r.Id;
+                    ws.Cell(row, 2).Value = r.Description;
+                    ws.Cell(row, 3).Value = r.Street;
+                    ws.Cell(row, 4).Value = r.District;
+                    ws.Cell(row, 5).Value = r.Severity;
+                    ws.Cell(row, 6).Value = r.Status.Name;
+                    ws.Cell(row, 7).Value = r.CreatedAt.ToString("yyyy-MM-dd");
+                    StyleExcelRow(ws, row, 7, row % 2 == 0 ? "#fef9c3" : "#ffffff");
+                    row++;
+                }
+                ws.Columns().AdjustToContents();
+            }
+
+            using var ms = new MemoryStream();
+            workbook.SaveAs(ms);
+            return new ExportFileResult
+            {
+                Content = ms.ToArray(),
+                ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.xlsx"
+            };
+        }
+        else
         {
-            Content = System.Text.Encoding.UTF8.GetBytes(json),
-            ContentType = "application/json",
-            FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.json"
-        };
+            var data = new
+            {
+                generatedAt = DateTime.UtcNow,
+                filters = new { dto.ReportType, dto.DateFrom, dto.DateTo, dto.Severity, dto.Status },
+                summary = new { totalFlood = floodReports.Count, totalDrain = drainReports.Count, total = floodReports.Count + drainReports.Count },
+                floodReports = floodReports.Select(r => new { r.Id, r.Description, r.Street, r.District, r.Severity, status = r.Status.Name, r.WaterLevelCm, r.CreatedAt }),
+                drainReports = drainReports.Select(r => new { r.Id, r.Description, r.Street, r.District, r.Severity, status = r.Status.Name, r.CreatedAt })
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            return new ExportFileResult
+            {
+                Content = System.Text.Encoding.UTF8.GetBytes(json),
+                ContentType = "application/json",
+                FileName = $"dynamic_report_{DateTime.UtcNow:yyyyMMdd}.json"
+            };
+        }
     }
-}
 }
