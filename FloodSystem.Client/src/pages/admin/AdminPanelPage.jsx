@@ -110,6 +110,12 @@ export default function AdminPanelPage() {
   const [reportsTab, setReportsTab] = useState("drain");
   const [form, setForm] = useState({ name: "", description: "", latitude: "", longitude: "" });
   const [zoneForm, setZoneForm] = useState({ name: "", description: "", criticalRainfallThreshold: 10 });
+  
+  // State për lidhjen Zones me Locations
+  const [selectedZoneId, setSelectedZoneId] = useState(null);
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [zoneLocations, setZoneLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   const isAdmin = user?.roles?.includes("Admin");
   const isAuthority = user?.roles?.includes("Authority");
@@ -132,6 +138,78 @@ export default function AdminPanelPage() {
       setLoading(false);
     }
   }, []);
+
+  // Ngarko location-et e një zone
+  const loadZoneLocations = async (zoneId) => {
+    if (!zoneId) return;
+    setLoadingLocations(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations`, {
+        credentials: "include"
+      });
+      const data = await response.json();
+      setZoneLocations(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load zone locations:", error);
+      setZoneLocations([]);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  // Lidh Location me Zone
+  const handleLinkLocationToZone = async () => {
+    if (!selectedZoneId || !selectedLocationId) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/Zones/${selectedZoneId}/locations/${selectedLocationId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to link");
+      }
+      
+      alert("Location linked to zone successfully!");
+      await loadZoneLocations(selectedZoneId);
+      await loadData();
+      setSelectedLocationId(null);
+    } catch (error) {
+      alert("Failed to link: " + error.message);
+    }
+  };
+
+  // Hiq location nga zona
+  const handleUnlinkLocation = async (zoneId, locationId) => {
+    if (!window.confirm("Remove this location from the zone?")) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations/${locationId}`, {
+        method: "DELETE",
+        credentials: "include"
+      });
+      
+      if (!response.ok) throw new Error("Failed to unlink");
+      
+      alert("Location removed from zone");
+      await loadZoneLocations(zoneId);
+      await loadData();
+    } catch (error) {
+      alert("Failed to remove: " + error.message);
+    }
+  };
+
+  // Kur ndryshon zona e zgjedhur, ngarko location-et e saj
+  useEffect(() => {
+    if (selectedZoneId) {
+      loadZoneLocations(selectedZoneId);
+    } else {
+      setZoneLocations([]);
+    }
+  }, [selectedZoneId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -249,6 +327,7 @@ export default function AdminPanelPage() {
           )}
         </div>
 
+        {/* LOCATIONS TAB */}
         {activeTab === "locations" && (
           <div className="admin-section">
             {canEdit && (
@@ -283,6 +362,7 @@ export default function AdminPanelPage() {
           </div>
         )}
 
+        {/* ZONES TAB */}
         {activeTab === "zones" && (
           <div className="admin-section">
             {canEdit && (
@@ -297,6 +377,47 @@ export default function AdminPanelPage() {
                 </div>
               </form>
             )}
+
+            {/* Dropdown për të lidhur Locations me Zone */}
+            <div className="zone-linking-section">
+              <h3>🔗 Link Locations to Zone</h3>
+              <div className="zone-linking-form">
+                <select
+                  className="zone-select"
+                  value={selectedZoneId || ""}
+                  onChange={(e) => setSelectedZoneId(parseInt(e.target.value))}
+                >
+                  <option value="">Select Zone</option>
+                  {zones.map(zone => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name} (Threshold: {zone.criticalRainfallThreshold}mm)
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className="location-select"
+                  value={selectedLocationId || ""}
+                  onChange={(e) => setSelectedLocationId(parseInt(e.target.value))}
+                >
+                  <option value="">Select Location</option>
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name} ({loc.latitude}, {loc.longitude})
+                    </option>
+                  ))}
+                </select>
+
+                <button 
+                  className="link-btn" 
+                  onClick={handleLinkLocationToZone}
+                  disabled={!selectedZoneId || !selectedLocationId}
+                >
+                  🔗 Link Location to Zone
+                </button>
+              </div>
+            </div>
+
             <div className="admin-list">
               <h3>Existing Zones</h3>
               {loading ? <div>Loading...</div> : zones.map(zone => (
@@ -307,15 +428,40 @@ export default function AdminPanelPage() {
                     <span className="admin-threshold">Threshold: {zone.criticalRainfallThreshold} mm</span>
                   </div>
                   <div style={{ display: "flex", gap: "8px" }}>
-                    {canEdit && <button className="admin-edit" onClick={() => startEditZone(zone)}>Edit</button>}
-                    {canDelete && <button className="admin-delete" onClick={() => handleDeleteZone(zone.id)}>Delete</button>}
+                    {canEdit && <button className="admin-edit" onClick={() => startEditZone(zone)}>✏️ Edit</button>}
+                    {canDelete && <button className="admin-delete" onClick={() => handleDeleteZone(zone.id)}>🗑️ Delete</button>}
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Lista e location-eve për zonën e zgjedhur */}
+            {selectedZoneId && (
+              <div className="zone-locations-list">
+                <h3>📍 Locations in {zones.find(z => z.id === selectedZoneId)?.name}</h3>
+                {loadingLocations ? (
+                  <div>Loading...</div>
+                ) : zoneLocations.length === 0 ? (
+                  <div className="no-locations">No locations linked to this zone</div>
+                ) : (
+                  zoneLocations.map(loc => (
+                    <div key={loc.id} className="zone-location-item">
+                      <span>{loc.name}</span>
+                      <button 
+                        className="unlink-btn"
+                        onClick={() => handleUnlinkLocation(selectedZoneId, loc.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         )}
 
+        {/* REPORTS TAB */}
         {activeTab === "reports" && (
           <div className="admin-section">
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -324,7 +470,6 @@ export default function AdminPanelPage() {
                 { label: "Pending", value: allCombined.filter(r => r.status === "Pending").length, color: "#f87171", icon: "⏳" },
                 { label: "In Progress", value: allCombined.filter(r => r.status === "In Progress").length, color: "#fb923c", icon: "🔍" },
                 { label: "Resolved", value: allCombined.filter(r => r.status === "Resolved").length, color: "#4ade80", icon: "✅" },
-
               ].map((stat) => (
                 <div key={stat.label} style={{
                   flex: "1", minWidth: "130px", padding: "14px 16px",

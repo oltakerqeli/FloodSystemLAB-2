@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Circle, CircleMarker, Popup, useMap } from "re
 import "leaflet/dist/leaflet.css";
 import { getWeatherLatestAll, getAlerts, getZones, getLocations, getSafeRoutes } from "../../services/weatherService";
 import { useAuth } from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../utils/apiConfig";
 import "./DashboardPage.css";
 
 const RISK_COLOR = {
@@ -46,10 +47,28 @@ export default function DashboardPage() {
   const [locations, setLocations] = useState([]);
   const [safeRoutes, setSafeRoutes] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [zoneLocationMap, setZoneLocationMap] = useState({});
 
   const isAdmin = user?.roles?.includes("Admin");
   const isAuthority = user?.roles?.includes("Authority");
   const isAdminOrAuthority = isAdmin || isAuthority;
+
+  // Ngarko location-et për çdo zonë
+  const loadZoneLocations = useCallback(async () => {
+    const map = {};
+    for (const zone of zones) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/Zones/${zone.id}/locations`, {
+          credentials: "include"
+        });
+        const data = await response.json();
+        map[zone.id] = Array.isArray(data) ? data : [];
+      } catch (error) {
+        map[zone.id] = [];
+      }
+    }
+    setZoneLocationMap(map);
+  }, [zones]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -66,10 +85,6 @@ export default function DashboardPage() {
       setAlerts(a || []);
       setWeather(w || []);
       setSafeRoutes(r);
-      
-      // Debug: shiko sa alerts po vijnë
-      console.log("Alerts received:", a?.length || 0);
-      console.log("Alerts data:", a);
     } catch (error) {
       console.error("Load error:", error);
     } finally {
@@ -81,7 +96,12 @@ export default function DashboardPage() {
     loadData();
   }, [loadData]);
 
-  // ✅ ALERT COUNTS - E RREGULLUAR
+  useEffect(() => {
+    if (zones.length > 0) {
+      loadZoneLocations();
+    }
+  }, [zones, loadZoneLocations]);
+
   const activeAlerts = alerts.filter((a) => a.riskLevel === "HIGH" || a.riskLevel === "MEDIUM");
   const highRiskCount = alerts.filter((a) => a.riskLevel === "HIGH").length;
   const mediumRiskCount = alerts.filter((a) => a.riskLevel === "MEDIUM").length;
@@ -92,14 +112,51 @@ export default function DashboardPage() {
     navigate("/login");
   };
 
-  const zoneMapData = zones.length > 0 ? zones.map((z, idx) => ({
-    id: z.id,
-    name: z.name,
-    risk: z.currentRiskLevel?.toLowerCase() || "low",
-    center: [42.66 + (idx * 0.01), 21.16 + (idx * 0.008)],
-    radius: 1000,
-    desc: z.description || z.name,
-  })) : [];
+  // ZONAT DINAMIKE - përdor koordinatat nga location-et e lidhura
+  const getDynamicZoneMapData = () => {
+    if (zones.length === 0) return [];
+    
+    return zones.map((zone) => {
+      const linkedLocations = zoneLocationMap[zone.id] || [];
+      
+      let centerLat = 42.6629;
+      let centerLng = 21.1655;
+      let risk = "low";
+      let locationCount = linkedLocations.length;
+      let radius = 4000;
+      
+      if (linkedLocations.length > 0) {
+        // Llogarit qendrën mesatare
+        const sumLat = linkedLocations.reduce((sum, loc) => sum + loc.latitude, 0);
+        const sumLng = linkedLocations.reduce((sum, loc) => sum + loc.longitude, 0);
+        centerLat = sumLat / linkedLocations.length;
+        centerLng = sumLng / linkedLocations.length;
+        
+        // Gjej risk level më të lartë nga weather
+        const risks = linkedLocations.map(loc => {
+          const w = weather.find(w => w.locationId === loc.id);
+          return w?.riskLevel?.toLowerCase() || "low";
+        });
+        if (risks.includes("high")) risk = "high";
+        else if (risks.includes("medium")) risk = "medium";
+        else risk = "low";
+        
+        // Radius bazuar në numrin e lokacioneve
+        radius = Math.min(3000 + linkedLocations.length * 500, 8000);
+      }
+      
+      return {
+        id: zone.id,
+        name: zone.name,
+        risk: risk,
+        center: [centerLat, centerLng],
+        radius: radius,
+        desc: `${zone.description || zone.name} (${locationCount} locations)`
+      };
+    });
+  };
+
+  const zoneMapData = getDynamicZoneMapData();
 
   const locationCoords = locations.map((loc) => ({
     id: loc.id,
@@ -122,7 +179,6 @@ export default function DashboardPage() {
         <div className="db-navbar-links">
           <Link to="/dashboard" className="db-nav-link active"><span>🏠</span> Dashboard</Link>
           
-          {/* DROPDOWN - WEATHER */}
           <div className="dropdown">
             <button className="dropbtn">🌤️ Weather <span>▼</span></button>
             <div className="dropdown-content">
@@ -133,7 +189,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* DROPDOWN - REPORTS */}
           <div className="dropdown">
             <button className="dropbtn">📋 Reports <span>▼</span></button>
             <div className="dropdown-content">
@@ -144,7 +199,6 @@ export default function DashboardPage() {
           </div>
           <Link to="/search" className="db-nav-link"><span>🔍</span> Search</Link>
 
-          {/* PANEL - vetëm për Admin/Authority */}
           {isAdminOrAuthority && (
             <Link to="/admin" className="db-nav-link"><span>⚙️</span> Authority Panel</Link>
           )}
@@ -221,7 +275,6 @@ export default function DashboardPage() {
 
         {/* SIDEBAR */}
         <aside className="db-sidebar">
-          {/* User Info */}
           <div className="db-user-card">
             <div className="db-user-avatar">👤</div>
             <div className="db-user-info">
@@ -231,48 +284,22 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* EMERGENCY GUIDE */}
           <div className="db-emergency-guide">
             <p className="db-section-title">🆘 EMERGENCY GUIDE</p>
             <div className="db-guide-content">
-              <div className="db-guide-item">
-                <span className="db-guide-icon">🌊</span>
-                <div className="db-guide-text">
-                  <strong>Flood:</strong> Move to higher ground immediately. Avoid walking or driving through flood water.
-                </div>
-              </div>
-              <div className="db-guide-item">
-                <span className="db-guide-icon">🚧</span>
-                <div className="db-guide-text">
-                  <strong>Drain Blockage:</strong> Report to municipality. Avoid area until cleared.
-                </div>
-              </div>
-              <div className="db-guide-item">
-                <span className="db-guide-icon">⚠️</span>
-                <div className="db-guide-text">
-                  <strong>High Risk Zone:</strong> Follow evacuation orders. Keep emergency kit ready.
-                </div>
-              </div>
+              <div className="db-guide-item"><span className="db-guide-icon">🌊</span><div className="db-guide-text"><strong>Flood:</strong> Move to higher ground immediately.</div></div>
+              <div className="db-guide-item"><span className="db-guide-icon">🚧</span><div className="db-guide-text"><strong>Drain Blockage:</strong> Report to municipality.</div></div>
+              <div className="db-guide-item"><span className="db-guide-icon">⚠️</span><div className="db-guide-text"><strong>High Risk Zone:</strong> Follow evacuation orders.</div></div>
             </div>
             <div className="db-emergency-calls">
               <p className="db-call-title">📞 EMERGENCY CONTACTS</p>
-              <div className="db-call-item">
-                <span className="db-call-number">112</span>
-                <span className="db-call-label">General Emergency</span>
-              </div>
-              <div className="db-call-item">
-                <span className="db-call-number">0800 11 222</span>
-                <span className="db-call-label">Municipality Helpdesk</span>
-              </div>
-              <div className="db-call-item">
-                <span className="db-call-number">+383 38 123 456</span>
-                <span className="db-call-label">Flood Response Unit</span>
-              </div>
+              <div className="db-call-item"><span className="db-call-number">112</span><span className="db-call-label">General Emergency</span></div>
+              <div className="db-call-item"><span className="db-call-number">0800 11 222</span><span className="db-call-label">Municipality Helpdesk</span></div>
+              <div className="db-call-item"><span className="db-call-number">+383 38 123 456</span><span className="db-call-label">Flood Response Unit</span></div>
             </div>
           </div>
 
-          {/* OVERVIEW STATS */}
-          {/* OVERVIEW STATS */}
+        {/* OVERVIEW STATS */}
 <div>
   <p className="db-section-title">📊 OVERVIEW</p>
   <div className="db-stat-grid">
@@ -304,8 +331,6 @@ export default function DashboardPage() {
     </div>
   </div>
 </div>
-
-          {/* RISK ZONES */}
           <div>
             <p className="db-section-title">🗺️ RISK ZONES</p>
             <div className="db-zone-list">
@@ -324,7 +349,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* ACTIVE ALERTS LIST */}
           {totalActiveAlerts > 0 && (
             <div>
               <p className="db-section-title">🚨 ACTIVE ALERTS ({totalActiveAlerts})</p>
@@ -342,26 +366,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* SAFE ROUTES SUMMARY */}
           {safeRoutes && (
             <div>
               <p className="db-section-title">🛣️ SAFE ROUTES SUMMARY</p>
               <div className="db-stat-grid">
-                <div className="db-stat-card">
-                  <div className="db-stat-card__icon">✅</div>
-                  <div className="db-stat-card__val">{safeRoutes.safeLocations?.length || 0}</div>
-                  <div className="db-stat-card__label">Safe</div>
-                </div>
-                <div className="db-stat-card">
-                  <div className="db-stat-card__icon">⚠️</div>
-                  <div className="db-stat-card__val">{safeRoutes.cautionLocations?.length || 0}</div>
-                  <div className="db-stat-card__label">Caution</div>
-                </div>
-                <div className="db-stat-card">
-                  <div className="db-stat-card__icon">🚫</div>
-                  <div className="db-stat-card__val">{safeRoutes.blockedLocations?.length || 0}</div>
-                  <div className="db-stat-card__label">Blocked</div>
-                </div>
+                <div className="db-stat-card"><div className="db-stat-card__icon">✅</div><div className="db-stat-card__val">{safeRoutes.safeLocations?.length || 0}</div><div className="db-stat-card__label">Safe</div></div>
+                <div className="db-stat-card"><div className="db-stat-card__icon">⚠️</div><div className="db-stat-card__val">{safeRoutes.cautionLocations?.length || 0}</div><div className="db-stat-card__label">Caution</div></div>
+                <div className="db-stat-card"><div className="db-stat-card__icon">🚫</div><div className="db-stat-card__val">{safeRoutes.blockedLocations?.length || 0}</div><div className="db-stat-card__label">Blocked</div></div>
               </div>
             </div>
           )}
