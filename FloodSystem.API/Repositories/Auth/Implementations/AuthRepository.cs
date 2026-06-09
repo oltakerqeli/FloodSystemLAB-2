@@ -77,5 +77,17 @@ namespace FloodSystem.API.Repositories.Auth.Implementations
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<User?> GetUserByResetTokenAsync(string token)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.ResetPasswordToken == token);
+        }
+
+        public Task UpdateUserAsync(User user)
+        {
+            _context.Users.Update(user);
+            return Task.CompletedTask;
+        }
     }
 }

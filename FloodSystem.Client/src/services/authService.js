@@ -64,3 +64,47 @@ export async function logoutUser() {
 
   return data;
 }
+
+const API_URL = "http://localhost:5164/api";
+
+export const forgotPassword = async (email) => {
+  const res = await fetch(`${API_URL}/Auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to send reset code");
+
+  return data;
+};
+
+export const verifyResetCode = async (code) => {
+  const res = await fetch(`${API_URL}/Auth/verify-reset-code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ code }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Invalid code");
+
+  return data;
+};
+
+export const resetPassword = async (code, newPassword, confirmPassword) => {
+  const res = await fetch(`${API_URL}/Auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ code, newPassword, confirmPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to reset password");
+
+  return data;
+};

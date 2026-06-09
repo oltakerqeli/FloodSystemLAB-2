@@ -4,6 +4,7 @@ import { getLocations, createLocation, updateLocation, deleteLocation, getZones,
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/apiConfig";
 import "./AdminPanelPage.css";
+import ManageUsers from "./ManageUsers";
 
 function getStatusStyle(status) {
   switch (status) {
@@ -238,9 +239,14 @@ export default function AdminPanelPage() {
           <button className={`admin-tab ${activeTab === "reports" ? "active" : ""}`} onClick={() => setActiveTab("reports")}>
             📋 Reports ({allFloodReports.length + allDrainReports.length})
           </button>
-          <button className={`admin-tab ${activeTab === "users" ? "active" : ""}`} onClick={() => navigate("/admin/users")}>
-            👥 Manage Users
-          </button>
+          {canEdit && (
+            <button
+              className={`admin-tab ${activeTab === "users" ? "active" : ""}`}
+              onClick={() => setActiveTab("users")}
+            >
+              👥 Manage Users
+            </button>
+          )}
         </div>
 
         {activeTab === "locations" && (
@@ -318,7 +324,7 @@ export default function AdminPanelPage() {
                 { label: "Pending", value: allCombined.filter(r => r.status === "Pending").length, color: "#f87171", icon: "⏳" },
                 { label: "In Progress", value: allCombined.filter(r => r.status === "In Progress").length, color: "#fb923c", icon: "🔍" },
                 { label: "Resolved", value: allCombined.filter(r => r.status === "Resolved").length, color: "#4ade80", icon: "✅" },
-                
+
               ].map((stat) => (
                 <div key={stat.label} style={{
                   flex: "1", minWidth: "130px", padding: "14px 16px",
@@ -381,6 +387,12 @@ export default function AdminPanelPage() {
 
         {selectedReport && (
           <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
+        )}
+
+        {activeTab === "users" && (
+          <div className="admin-section">
+            <ManageUsers embedded />
+          </div>
         )}
       </div>
     </div>

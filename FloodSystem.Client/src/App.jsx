@@ -15,6 +15,9 @@ import DynamicReportPage from "./pages/reports/DynamicReportPage";
 import TrafficPage from "./pages/weather/TrafficPage";
 import SafeRoutesPage from "./pages/weather/SafeRoutesPage";
 import ManageUsers from "./pages/admin/ManageUsers";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import VerifyResetCode from "./pages/auth/VerifyResetCode";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -62,9 +65,10 @@ function App() {
         <Route path="/traffic" element={<ProtectedRoute><TrafficPage /></ProtectedRoute>} />
         <Route path="/safe-routes" element={<ProtectedRoute><SafeRoutesPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute requiredRole="Admin"><AdminPanelPage /></ProtectedRoute>} />
-        <Route path="/admin/users" element={ <ProtectedRoute requiredRole="Admin"><ManageUsers /></ProtectedRoute>
-          }
-        />
+        <Route path="/admin/users" element={<ProtectedRoute requiredRole="Admin"><ManageUsers /></ProtectedRoute>} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-reset-code" element={<VerifyResetCode />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );

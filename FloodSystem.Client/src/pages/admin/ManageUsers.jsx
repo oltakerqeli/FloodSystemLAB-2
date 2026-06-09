@@ -4,7 +4,7 @@ import "./ManageUsers.css";
 import { useNavigate } from "react-router-dom";
 
 
-export default function ManageUsers() {
+export default function ManageUsers({ embedded = false }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -58,10 +58,11 @@ const handleActivate = async (id) => {
 
   if (loading) return <p>Loading users...</p>;
 
-  return (
-    <div className="manage-users-page">
-      <div className="manage-users-container">
+ return (
+  <div className={embedded ? "manage-users-embedded" : "manage-users-page"}>
+    <div className={embedded ? "manage-users-content" : "manage-users-container"}>
 
+      {!embedded && (
         <div className="manage-users-header">
           <h1>Manage Users</h1>
 
@@ -72,84 +73,91 @@ const handleActivate = async (id) => {
             ← Back
           </button>
         </div>
+      )}
 
-        {message && (
-          <div className="manage-users-message">
-            {message}
-          </div>
-        )}
+      {embedded && (
+        <h2 className="embedded-title">Manage Users</h2>
+      )}
 
-        <div className="manage-users-table-wrapper">
-          <table className="manage-users-table">
-            <thead>
-              <tr>
-                <th>Id</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Active</th>
-                <th>Roles</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
-
-                  <td>
-                    {user.firstName} {user.lastName}
-                  </td>
-
-                  <td>{user.email}</td>
-
-                  <td>
-                    {user.isActive ? "✅ Yes" : "❌ No"}
-                  </td>
-
-                  <td>
-                    {user.roles?.length > 0
-                      ? user.roles.join(", ")
-                      : "No Role"}
-                  </td>
-
-                  <td>
-                    {user.isActive ? (
-                      <button
-                        className="btn-action btn-deactivate"
-                        onClick={() => handleDeactivate(user.id)}
-                      >
-                        Deactivate
-                      </button>
-                    ) : (
-                      <button
-                        className="btn-action btn-activate"
-                        onClick={() => handleActivate(user.id)}
-                      >
-                        Activate
-                      </button>
-                    )}
-
-                    <select
-                      className="role-select"
-                      value={user.roles?.[0] || ""}
-                      onChange={(e) => handleAssignRole(user.id, e.target.value)}
-                    >
-                      <option value="" disabled>
-                        Select role
-                      </option>
-                      <option value="User">User</option>
-                      <option value="Authority">Authority</option>
-                      <option value="Admin">Admin</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {message && (
+        <div className="manage-users-message">
+          {message}
         </div>
+      )}
 
+      <div className="manage-users-table-wrapper">
+        <table className="manage-users-table">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Active</th>
+              <th>Roles</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>{user.id}</td>
+
+                <td>
+                  {user.firstName} {user.lastName}
+                </td>
+
+                <td>{user.email}</td>
+
+                <td>
+                  {user.isActive ? "✅ Yes" : "❌ No"}
+                </td>
+
+                <td>
+                  {user.roles?.length > 0
+                    ? user.roles.join(", ")
+                    : "No Role"}
+                </td>
+
+                <td>
+                  {user.isActive ? (
+                    <button
+                      className="btn-action btn-deactivate"
+                      onClick={() => handleDeactivate(user.id)}
+                    >
+                      Deactivate
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-action btn-activate"
+                      onClick={() => handleActivate(user.id)}
+                    >
+                      Activate
+                    </button>
+                  )}
+
+                  <select
+                    className="role-select"
+                    value={user.roles?.[0] || ""}
+                    onChange={(e) =>
+                      handleAssignRole(user.id, e.target.value)
+                    }
+                  >
+                    <option value="" disabled>
+                      Select role
+                    </option>
+                    <option value="User">User</option>
+                    <option value="Authority">Authority</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
     </div>
-  );
+  </div>
+);
 }

@@ -27,31 +27,39 @@ namespace FloodSystem.API.Controllers
 
             return Ok(new { message = result });
         }
+        
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
-            var result = await _authService.LoginAsync(dto);
-
-            if (result == null)
-                return Unauthorized(new { message = "Invalid email or password." });
-
-            Response.Cookies.Append("accessToken", result.AccessToken, new CookieOptions
+            try
             {
-                HttpOnly = true,
-                Secure = false,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
-            });
+                var result = await _authService.LoginAsync(dto);
 
-            Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
+                if (result == null)
+                    return Unauthorized(new { message = "Invalid email or password." });
+
+                Response.Cookies.Append("accessToken", result.AccessToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(15)
+                });
+
+                Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UtcNow.AddDays(7)
+                });
+
+                return Ok(new { message = "Login successful." });
+            }
+            catch (Exception ex)
             {
-                HttpOnly = true,
-                Secure = false,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddDays(7)
-            });
-
-            return Ok(new { message = "Login successful." });
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("refresh-token")]
@@ -126,6 +134,57 @@ namespace FloodSystem.API.Controllers
                 roles,
                 permissions
             });
+        }
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+        {
+            await _authService.ForgotPasswordAsync(dto.Email);
+
+            return Ok(new
+            {
+                message = "If this email exists, a reset code has been sent."
+            });
+        }
+
+        [HttpPost("verify-reset-code")]
+        public async Task<IActionResult> VerifyResetCode(VerifyResetCodeDto dto)
+        {
+            var result = await _authService.VerifyResetCodeAsync(dto.Code);
+
+            if (!result)
+                return BadRequest(new { message = "Invalid or expired code." });
+
+            return Ok(new { message = "Code verified successfully." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+        {
+            try
+            {
+                var result = await _authService.ResetPasswordAsync(
+                    dto.Code,
+                    dto.NewPassword,
+                    dto.ConfirmPassword);
+
+                if (!result)
+                    return BadRequest(new
+                    {
+                        message = "Invalid code or passwords do not match."
+                    });
+
+                return Ok(new
+                {
+                    message = "Password reset successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
         }
     }
 }

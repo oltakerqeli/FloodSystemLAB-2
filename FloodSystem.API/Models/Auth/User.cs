@@ -30,5 +30,8 @@ namespace FloodSystem.API.Models.Auth
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+        public string? ResetPasswordToken { get; set; }
+        public DateTime? ResetTokenExpiry { get; set; }
     }
 }

@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using FloodSystem.API.MongoDB;
+using FloodSystem.API.Services.Interfaces;
 
 namespace FloodSystem.API.Services.Auth
 {
@@ -15,12 +16,14 @@ namespace FloodSystem.API.Services.Auth
         private readonly IAuthRepository _authRepository;
         private readonly IConfiguration _configuration;
         private readonly MongoDbService _mongoDbService;
+        private readonly IEmailService _emailService;
 
-        public AuthService(IAuthRepository authRepository, IConfiguration configuration, MongoDbService mongoDbService)
+        public AuthService(IAuthRepository authRepository, IConfiguration configuration, MongoDbService mongoDbService, IEmailService emailService)
         {
             _authRepository = authRepository;
             _configuration = configuration;
             _mongoDbService = mongoDbService;
+            _emailService = emailService;
         }
 
         public async Task<string> RegisterAsync(RegisterDto dto)
@@ -68,6 +71,11 @@ namespace FloodSystem.API.Services.Auth
             {
                 await LogLoginActivityAsync(null, dto.Email, "LOGIN_FAILED");
                 return null;
+            }
+
+            if (!user.IsActive)
+            {
+                throw new Exception("Your account has been deactivated.");
             }
 
             var isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
@@ -165,10 +173,10 @@ namespace FloodSystem.API.Services.Auth
 
             var permissions = await _authRepository.GetUserPermissionsAsync(user.Id);
 
-foreach (var permission in permissions)
-{
-    claims.Add(new Claim("permission", permission));
-}
+            foreach (var permission in permissions)
+            {
+                claims.Add(new Claim("permission", permission));
+            }
 
             foreach (var userRole in user.UserRoles)
             {
@@ -212,6 +220,69 @@ foreach (var permission in permissions)
                 Action = action,
                 Timestamp = DateTime.UtcNow
             });
+        }
+
+        public async Task<bool> ForgotPasswordAsync(string email)
+        {
+            var user = await _authRepository.GetUserByEmailAsync(email);
+
+            if (user == null)
+                return false;
+
+            user.ResetPasswordToken = new Random().Next(100000, 999999).ToString();
+            user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(5);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _authRepository.UpdateUserAsync(user);
+            await _authRepository.SaveChangesAsync();
+
+            await _emailService.SendEmailAsync(
+                user.Email,
+                "Reset your password - Flood System",
+                $@"
+        <h2>Flood System Password Reset</h2>
+        <p>Your password reset code is:</p>
+        <h1 style='letter-spacing: 8px;'>{user.ResetPasswordToken}</h1>
+        <p>This code expires in 5 minutes.</p>
+        <p>If you did not request this, you can ignore this email.</p>"
+            );
+
+            return true;
+        }
+
+        public async Task<bool> VerifyResetCodeAsync(string code)
+        {
+            var user = await _authRepository.GetUserByResetTokenAsync(code);
+
+            if (user == null || user.ResetTokenExpiry < DateTime.UtcNow)
+                return false;
+
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string code, string newPassword, string confirmPassword)
+        {
+            if (newPassword != confirmPassword)
+                return false;
+
+            var user = await _authRepository.GetUserByResetTokenAsync(code);
+
+            if (user == null || user.ResetTokenExpiry < DateTime.UtcNow)
+                return false;
+
+            if (BCrypt.Net.BCrypt.Verify(newPassword, user.PasswordHash))
+                throw new Exception("New password cannot be the same as the current password.");
+
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            user.ResetPasswordToken = null;
+            user.ResetTokenExpiry = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _authRepository.UpdateUserAsync(user);
+            await _authRepository.SaveChangesAsync();
+
+            return true;
         }
     }
 }

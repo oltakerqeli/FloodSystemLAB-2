@@ -5,12 +5,14 @@ import {
 } from "react-icons/fa";
 import { loginUser } from "../../services/authService";
 import "./Auth.css";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -36,11 +38,7 @@ function Login() {
         <h1>Flood System</h1>
         <p>Sign in to continue</p>
 
-        {message && (
-          <div className={`alert ${isError ? "alert-danger" : "alert-success"}`}>
-            {message}
-          </div>
-        )}
+       {message && <div className="forgot-message">{message}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="auth-field">
@@ -76,6 +74,13 @@ function Login() {
           </div>
 
           <button type="submit" className="auth-btn">Sign In</button>
+
+          <p
+            className="auth-link"
+            onClick={() => navigate("/forgot-password")}
+          >
+            Forgot your password?
+          </p>
         </form>
 
         <span className="auth-link">

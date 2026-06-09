@@ -122,3 +122,22 @@
   background: #16a34a;
   color: white;
 }
+.manage-users-embedded {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+}
+
+.manage-users-content {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.embedded-title {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 28px;
+  color: #f8fafc;
+}
