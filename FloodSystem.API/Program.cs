@@ -94,7 +94,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("ManageUsers", policy =>
+        policy.RequireClaim("permission", "ManageUsers"));
+
+    options.AddPolicy("ManageRoles", policy =>
+        policy.RequireClaim("permission", "ManageRoles"));
+
+    options.AddPolicy("ViewDashboard", policy =>
+        policy.RequireClaim("permission", "ViewDashboard"));
+
+    options.AddPolicy("CreateReport", policy =>
+        policy.RequireClaim("permission", "CreateReport"));
+
+    options.AddPolicy("ViewReports", policy =>
+        policy.RequireClaim("permission", "ViewReports"));
+
+    options.AddPolicy("ManageReports", policy =>
+        policy.RequireClaim("permission", "ManageReports"));
+
+    options.AddPolicy("ManageLocations", policy =>
+        policy.RequireClaim("permission", "ManageLocations"));
+
+    options.AddPolicy("ManageAlerts", policy =>
+        policy.RequireClaim("permission", "ManageAlerts"));
+});
 
 builder.Services.AddOpenApiDocument(config =>
 {

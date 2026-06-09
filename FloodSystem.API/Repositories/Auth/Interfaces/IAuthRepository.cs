@@ -11,6 +11,7 @@ namespace FloodSystem.API.Repositories.Auth.Interfaces
         Task AddRefreshTokenAsync(RefreshToken refreshToken);
         Task<RefreshToken?> GetValidRefreshTokenAsync(string tokenHash);
         Task<RefreshToken?> GetActiveRefreshTokenAsync(string tokenHash);
+        Task<List<string>> GetUserPermissionsAsync(int userId);
         Task SaveChangesAsync();
     }
 }

@@ -28,10 +28,55 @@ function Register() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const getPasswordError = (password) => {
+
+        if (password.length < 8) {
+            return "Password must be at least 8 characters.";
+        }
+
+        if (!/[A-Z]/.test(password)) {
+            return "Password must include at least one uppercase letter.";
+        }
+
+        if (!/[a-z]/.test(password)) {
+            return "Password must include at least one lowercase letter.";
+        }
+
+        if (!/\d/.test(password)) {
+            return "Password must include at least one number.";
+        }
+
+        if (!/[^A-Za-z\d]/.test(password)) {
+            return "Password must include at least one special character.";
+        }
+
+        return "";
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage("");
         setIsError(false);
+
+        if (formData.firstName.trim().length < 2) {
+            setIsError(true);
+            setMessage("First name must be at least 2 characters.");
+            return;
+        }
+
+        if (formData.lastName.trim().length < 2) {
+            setIsError(true);
+            setMessage("Last name must be at least 2 characters.");
+            return;
+        }
+
+        const passwordError = getPasswordError(formData.password);
+
+        if (passwordError) {
+            setIsError(true);
+            setMessage(passwordError);
+            return;
+        }
 
         if (formData.password !== formData.confirmPassword) {
             setIsError(true);
@@ -58,7 +103,6 @@ function Register() {
             setMessage(error.message);
         }
     };
-
     return (
         <div className="auth-page">
             <div className="auth-card register-card">
@@ -107,7 +151,7 @@ function Register() {
                                 onClick={() =>
                                     setShowConfirmPassword(!showConfirmPassword)
                                 }
-                                >
+                            >
                                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                             </span>
                         </div>

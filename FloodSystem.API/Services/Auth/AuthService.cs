@@ -78,7 +78,7 @@ namespace FloodSystem.API.Services.Auth
                 return null;
             }
 
-            var accessToken = GenerateJwtToken(user);
+            var accessToken = await GenerateJwtTokenAsync(user);
             var refreshToken = GenerateRefreshToken();
 
             await _authRepository.AddRefreshTokenAsync(new RefreshToken
@@ -121,7 +121,7 @@ namespace FloodSystem.API.Services.Auth
                 CreatedAt = DateTime.UtcNow
             });
 
-            var newAccessToken = GenerateJwtToken(storedToken.User);
+            var newAccessToken = await GenerateJwtTokenAsync(storedToken.User);
 
             await _authRepository.SaveChangesAsync();
 
@@ -148,7 +148,7 @@ namespace FloodSystem.API.Services.Auth
             return true;
         }
 
-        private string GenerateJwtToken(User user)
+        private async Task<string> GenerateJwtTokenAsync(User user)
         {
             var jwtKey = _configuration["Jwt:Key"];
             var issuer = _configuration["Jwt:Issuer"];
@@ -162,6 +162,13 @@ namespace FloodSystem.API.Services.Auth
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
+
+            var permissions = await _authRepository.GetUserPermissionsAsync(user.Id);
+
+foreach (var permission in permissions)
+{
+    claims.Add(new Claim("permission", permission));
+}
 
             foreach (var userRole in user.UserRoles)
             {

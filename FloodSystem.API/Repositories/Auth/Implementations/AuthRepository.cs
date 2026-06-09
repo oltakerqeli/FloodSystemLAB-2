@@ -63,6 +63,16 @@ namespace FloodSystem.API.Repositories.Auth.Implementations
                     rt.RevokedAt == null);
         }
 
+        public async Task<List<string>> GetUserPermissionsAsync(int userId)
+        {
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .SelectMany(ur => ur.Role.RolePermissions)
+                .Select(rp => rp.Permission.Name)
+                .Distinct()
+                .ToListAsync();
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

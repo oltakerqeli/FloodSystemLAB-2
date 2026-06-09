@@ -33,7 +33,7 @@ namespace FloodSystem.API.Data
         public DbSet<ReportLog> ReportLogs => Set<ReportLog>();
         public DbSet<Export> Exports => Set<Export>();
         public DbSet<Import> Imports => Set<Import>();
-         public DbSet<Location> Locations => Set<Location>();
+        public DbSet<Location> Locations => Set<Location>();
         public DbSet<Zone> Zones => Set<Zone>();
         public DbSet<ZoneLocation> ZoneLocations => Set<ZoneLocation>();
         public DbSet<WeatherData> WeatherData => Set<WeatherData>();
@@ -72,7 +72,7 @@ namespace FloodSystem.API.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique();
-                
+
             modelBuilder.Entity<Role>()
                 .HasIndex(r => r.Name)
                 .IsUnique();
@@ -109,7 +109,7 @@ namespace FloodSystem.API.Data
                 new ReportStatus { Id = 2, Name = "In Progress" },
                 new ReportStatus { Id = 3, Name = "Resolved" }
             );
- 
+
             modelBuilder.Entity<ReportType>().HasData(
                 new ReportType { Id = 1, Name = "Flood" },
                 new ReportType { Id = 2, Name = "Drain" },
@@ -119,17 +119,17 @@ namespace FloodSystem.API.Data
                 new Setting { Id = 1, Key = "AppName", Value = "Flood System", Description = "Application name", UpdatedAt = new DateTime(2026, 1, 1) },
                 new Setting { Id = 2, Key = "MaxAlertLevel", Value = "3", Description = "Maximum alert risk level", UpdatedAt = new DateTime(2026, 1, 1) },
                 new Setting { Id = 3, Key = "WeatherFetchInterval", Value = "30", Description = "Weather API fetch interval in minutes", UpdatedAt = new DateTime(2026, 1, 1) }
-            );    
-            
-             modelBuilder.Entity<Location>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.Latitude).HasPrecision(9, 6);
-                entity.Property(e => e.Longitude).HasPrecision(9, 6);
-                entity.HasIndex(e => e.Name).IsUnique();
-            });
+            );
+
+            modelBuilder.Entity<Location>(entity =>
+           {
+               entity.HasKey(e => e.Id);
+               entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+               entity.Property(e => e.Description).HasMaxLength(500);
+               entity.Property(e => e.Latitude).HasPrecision(9, 6);
+               entity.Property(e => e.Longitude).HasPrecision(9, 6);
+               entity.HasIndex(e => e.Name).IsUnique();
+           });
             modelBuilder.Entity<Zone>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -188,6 +188,40 @@ namespace FloodSystem.API.Data
                 .HasOne(f => f.UploadedByUser)
                 .WithMany()
                 .HasForeignKey(f => f.UploadedBy);
+
+            modelBuilder.Entity<Permission>().HasData(
+                new Permission { Id = 1, Name = "ManageUsers", Description = "Can manage system users" },
+                new Permission { Id = 2, Name = "ManageRoles", Description = "Can assign and manage roles" },
+                new Permission { Id = 3, Name = "ViewDashboard", Description = "Can view dashboard" },
+                new Permission { Id = 4, Name = "CreateReport", Description = "Can create reports" },
+                new Permission { Id = 5, Name = "ViewReports", Description = "Can view reports" },
+                new Permission { Id = 6, Name = "ManageReports", Description = "Can manage reports" },
+                new Permission { Id = 7, Name = "ManageLocations", Description = "Can manage locations and zones" },
+                new Permission { Id = 8, Name = "ManageAlerts", Description = "Can manage alerts" }
+            );
+
+            modelBuilder.Entity<RolePermission>().HasData(
+                // Admin - all permissions
+                new RolePermission { Id = 1, RoleId = 1, PermissionId = 1 },
+                new RolePermission { Id = 2, RoleId = 1, PermissionId = 2 },
+                new RolePermission { Id = 3, RoleId = 1, PermissionId = 3 },
+                new RolePermission { Id = 4, RoleId = 1, PermissionId = 4 },
+                new RolePermission { Id = 5, RoleId = 1, PermissionId = 5 },
+                new RolePermission { Id = 6, RoleId = 1, PermissionId = 6 },
+                new RolePermission { Id = 7, RoleId = 1, PermissionId = 7 },
+                new RolePermission { Id = 8, RoleId = 1, PermissionId = 8 },
+
+                // User
+                new RolePermission { Id = 9, RoleId = 2, PermissionId = 4 },
+                new RolePermission { Id = 10, RoleId = 2, PermissionId = 5 },
+
+                // Authority
+                new RolePermission { Id = 11, RoleId = 3, PermissionId = 3 },
+                new RolePermission { Id = 12, RoleId = 3, PermissionId = 5 },
+                new RolePermission { Id = 13, RoleId = 3, PermissionId = 6 },
+                new RolePermission { Id = 14, RoleId = 3, PermissionId = 7 },
+                new RolePermission { Id = 15, RoleId = 3, PermissionId = 8 }
+            );
 
         }
     }

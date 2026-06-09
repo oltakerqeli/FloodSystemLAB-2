@@ -109,14 +109,22 @@ namespace FloodSystem.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var fullName = User.FindFirstValue(ClaimTypes.Name);
             var email = User.FindFirstValue(ClaimTypes.Email);
-            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+
+            var roles = User.FindAll(ClaimTypes.Role)
+                .Select(r => r.Value)
+                .ToList();
+
+            var permissions = User.FindAll("permission")
+                .Select(p => p.Value)
+                .ToList();
 
             return Ok(new
             {
                 id = userId,
                 fullName,
                 email,
-                roles
+                roles,
+                permissions
             });
         }
     }

@@ -7,7 +7,7 @@ namespace FloodSystem.API.Controllers.Auth
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "ManageUsers")]
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
