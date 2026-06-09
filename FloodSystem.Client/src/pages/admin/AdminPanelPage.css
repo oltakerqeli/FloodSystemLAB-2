@@ -216,3 +216,13 @@
 .admin-edit:hover {
   background: rgba(14, 165, 233, 0.25);
 }
+.admin-item select option {
+  background: #0a1a3a;
+  color: white;
+}
+
+.admin-item select {
+  background: rgba(14, 165, 233, 0.15) !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
+  color: white !important;
+}

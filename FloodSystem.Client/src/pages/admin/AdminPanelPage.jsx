@@ -5,6 +5,95 @@ import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/apiConfig";
 import "./AdminPanelPage.css";
 
+function getStatusStyle(status) {
+  switch (status) {
+    case "Resolved":
+      return { background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.4)" };
+    case "In Progress":
+      return { background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.4)" };
+    case "Pending":
+      return { background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.4)" };
+    default:
+      return { background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.15)" };
+  }
+}
+
+function ReportDetailModal({ report, onClose }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+      backdropFilter: "blur(4px)", display: "flex", alignItems: "center",
+      justifyContent: "center", zIndex: 1000, padding: "16px"
+    }} onClick={onClose}>
+      <div style={{
+        width: "100%", maxWidth: "520px",
+        background: "linear-gradient(135deg, #0a1a3a, #0d2252)",
+        border: "1px solid rgba(99,179,237,0.2)", borderRadius: "24px",
+        overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.6)"
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          padding: "24px 24px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)"
+        }}>
+          <div>
+            <h2 style={{ color: "white", fontSize: "18px", fontWeight: "800", margin: "0 0 6px" }}>
+              {report.reportType === "Flood" ? "🌊 Flood Report" : "🚧 Drain Report"}
+            </h2>
+            <span style={{ fontSize: "12px", color: "rgba(147,197,253,0.7)" }}>
+              📅 {new Date(report.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <button onClick={onClose} style={{
+            background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+            color: "white", width: "32px", height: "32px", borderRadius: "50%",
+            cursor: "pointer", fontSize: "14px"
+          }}>✕</button>
+        </div>
+        <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "20px", ...getStatusStyle(report.status) }}>
+              {report.status}
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "20px", background: "rgba(251,146,60,0.15)", color: "#fed7aa" }}>
+              {report.severity}
+            </span>
+          </div>
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "rgba(147,197,253,0.6)", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Description</label>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", margin: 0 }}>{report.description}</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            {report.street && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "rgba(147,197,253,0.6)", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Street</label>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", margin: 0 }}>📍 {report.street}</p>
+              </div>
+            )}
+            {report.district && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "rgba(147,197,253,0.6)", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>District</label>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", margin: 0 }}>🏘 {report.district}</p>
+              </div>
+            )}
+            {report.reporterName && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "rgba(147,197,253,0.6)", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Reported by</label>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", margin: 0 }}>👤 {report.reporterName}</p>
+              </div>
+            )}
+            {report.waterLevelCm > 0 && (
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "rgba(147,197,253,0.6)", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Water Level</label>
+                <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.85)", margin: 0 }}>💧 {report.waterLevelCm} cm</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPanelPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -16,6 +105,7 @@ export default function AdminPanelPage() {
   const [editingZone, setEditingZone] = useState(null);
   const [allFloodReports, setAllFloodReports] = useState([]);
   const [allDrainReports, setAllDrainReports] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [reportsTab, setReportsTab] = useState("drain");
   const [form, setForm] = useState({ name: "", description: "", latitude: "", longitude: "" });
   const [zoneForm, setZoneForm] = useState({ name: "", description: "", criticalRainfallThreshold: 10 });
@@ -285,40 +375,42 @@ export default function AdminPanelPage() {
             </div>
             <div className="admin-list">
               {(reportsTab === "drain" ? allDrainReports : allFloodReports).map(report => (
-                <div key={report.id} className="admin-item">
+                <div key={report.id} className="admin-item" onClick={() => setSelectedReport(report)} style={{ cursor: "pointer" }}>
                   <div>
                     <strong>{report.description}</strong>
                     <span className="admin-desc">📍 {report.street}, {report.district}</span>
                     <span className="admin-desc">⚠️ Severity: {report.severity}</span>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <span style={{
-                      fontSize: "11px", fontWeight: "700", padding: "4px 10px",
-                      borderRadius: "20px", background: "rgba(255,255,255,0.1)",
-                      color: "white"
-                    }}>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "20px", ...getStatusStyle(report.status) }}>
                       {report.status}
                     </span>
-                    <select
-                      value=""
-                      onChange={(e) => handleStatusChange(report.id, e.target.value, reportsTab === "drain" ? "Drain" : "Flood")}
-                      style={{
-                        padding: "4px 8px", borderRadius: "8px",
-                        background: "rgba(255,255,255,0.1)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "white", fontSize: "12px"
-                      }}
-                    >
-                      <option value="">Change status</option>
-                      <option value="1">Pending</option>
-                      <option value="2">Reviewed</option>
-                      <option value="3">Resolved</option>
-                    </select>
+                    {isAuthority && (
+                      <select
+                        value=""
+                        onChange={(e) => handleStatusChange(report.id, e.target.value, reportsTab === "drain" ? "Drain" : "Flood")}
+                        style={{
+                          padding: "4px 8px", borderRadius: "8px",
+                          background: "rgba(255,255,255,0.1)",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          color: "white", fontSize: "12px"
+                        }}
+                      >
+                        <option value="">Change status</option>
+                        <option value="1">Pending</option>
+                        <option value="2">Reviewed</option>
+                        <option value="3">Resolved</option>
+                      </select>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        )}
+
+        {selectedReport && (
+          <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
         )}
       </div>
     </div>

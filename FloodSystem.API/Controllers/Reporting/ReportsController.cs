@@ -35,18 +35,33 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("flood")]
-public async Task<IActionResult> GetFloodReports()
-{
-    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    return Ok(await _service.GetAllFloodReportsAsync(userId));
-}
+    public async Task<IActionResult> GetFloodReports()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        return Ok(await _service.GetAllFloodReportsAsync(userId));
+    }
 
-[HttpGet("drain")]
-public async Task<IActionResult> GetDrainReports()
-{
-    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    return Ok(await _service.GetAllDrainReportsAsync(userId));
-}
+    [HttpGet("drain")]
+    public async Task<IActionResult> GetDrainReports()
+    {
+        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        return Ok(await _service.GetAllDrainReportsAsync(userId));
+    }
+
+    [HttpGet("flood/all")]
+    [Authorize(Roles = "Admin,Authority")]
+    public async Task<IActionResult> GetAllFloodReports()
+    {
+        return Ok(await _service.GetAllFloodReportsAsync());
+    }
+
+    [HttpGet("drain/all")]
+    [Authorize(Roles = "Admin,Authority")]
+    public async Task<IActionResult> GetAllDrainReports()
+    {
+        return Ok(await _service.GetAllDrainReportsAsync());
+    }
+
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Authority")]
     public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
@@ -54,17 +69,4 @@ public async Task<IActionResult> GetDrainReports()
         await _service.UpdateReportStatusAsync(id, statusId, type);
         return NoContent();
     }
-    [HttpGet("flood/all")]
-[Authorize(Roles = "Admin,Authority")]
-public async Task<IActionResult> GetAllFloodReports()
-{
-    return Ok(await _service.GetAllFloodReportsAsync());
-}
-
-[HttpGet("drain/all")]
-[Authorize(Roles = "Admin,Authority")]
-public async Task<IActionResult> GetAllDrainReports()
-{
-    return Ok(await _service.GetAllDrainReportsAsync());
-}
 }
