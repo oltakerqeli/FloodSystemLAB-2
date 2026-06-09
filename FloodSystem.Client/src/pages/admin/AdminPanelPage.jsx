@@ -9,7 +9,7 @@ function getStatusStyle(status) {
   switch (status) {
     case "Resolved":
       return { background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.4)" };
-    case "In Progress":
+    case "Reviewed":
       return { background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.4)" };
     case "Pending":
       return { background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.4)" };
@@ -121,7 +121,6 @@ export default function AdminPanelPage() {
       const [l, z] = await Promise.all([getLocations(), getZones()]);
       setLocations(Array.isArray(l) ? l : []);
       setZones(Array.isArray(z) ? z : []);
-
       const floodRes = await fetch(`${API_BASE_URL}/Reports/flood/all`, { credentials: "include" });
       const drainRes = await fetch(`${API_BASE_URL}/Reports/drain/all`, { credentials: "include" });
       if (floodRes.ok) setAllFloodReports(await floodRes.json());
@@ -133,9 +132,7 @@ export default function AdminPanelPage() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleStatusChange = async (id, statusId, type) => {
     try {
@@ -154,124 +151,74 @@ export default function AdminPanelPage() {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
     try {
-      await createLocation({
-        name: form.name,
-        description: form.description,
-        latitude: parseFloat(form.latitude),
-        longitude: parseFloat(form.longitude),
-      });
+      await createLocation({ name: form.name, description: form.description, latitude: parseFloat(form.latitude), longitude: parseFloat(form.longitude) });
       setForm({ name: "", description: "", latitude: "", longitude: "" });
       await loadData();
       alert("Location created");
-    } catch (error) {
-      alert("Failed to create location");
-    }
+    } catch { alert("Failed to create location"); }
   };
 
   const handleUpdateLocation = async (e) => {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
     try {
-      await updateLocation(editingLocation.id, {
-        name: form.name,
-        description: form.description,
-        latitude: parseFloat(form.latitude),
-        longitude: parseFloat(form.longitude),
-      });
+      await updateLocation(editingLocation.id, { name: form.name, description: form.description, latitude: parseFloat(form.latitude), longitude: parseFloat(form.longitude) });
       setEditingLocation(null);
       setForm({ name: "", description: "", latitude: "", longitude: "" });
       await loadData();
       alert("Location updated");
-    } catch (error) {
-      alert("Failed to update location");
-    }
+    } catch { alert("Failed to update location"); }
   };
 
   const handleDeleteLocation = async (id) => {
     if (!canDelete) return alert("You don't have permission");
-    if (window.confirm("Are you sure you want to permanently delete this location?")) {
-      try {
-        await deleteLocation(id);
-        await loadData();
-        alert("Location permanently deleted");
-      } catch (error) {
-        alert("Failed to delete: " + error.message);
-      }
+    if (window.confirm("Are you sure?")) {
+      try { await deleteLocation(id); await loadData(); alert("Location deleted"); }
+      catch (error) { alert("Failed to delete: " + error.message); }
     }
   };
 
   const startEditLocation = (loc) => {
     setEditingLocation(loc);
-    setForm({
-      name: loc.name,
-      description: loc.description || "",
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-    });
+    setForm({ name: loc.name, description: loc.description || "", latitude: loc.latitude, longitude: loc.longitude });
   };
-
-  const cancelEditLocation = () => {
-    setEditingLocation(null);
-    setForm({ name: "", description: "", latitude: "", longitude: "" });
-  };
+  const cancelEditLocation = () => { setEditingLocation(null); setForm({ name: "", description: "", latitude: "", longitude: "" }); };
 
   const handleCreateZone = async (e) => {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
     try {
-      await createZone({
-        name: zoneForm.name,
-        description: zoneForm.description,
-        criticalRainfallThreshold: parseFloat(zoneForm.criticalRainfallThreshold),
-      });
+      await createZone({ name: zoneForm.name, description: zoneForm.description, criticalRainfallThreshold: parseFloat(zoneForm.criticalRainfallThreshold) });
       setZoneForm({ name: "", description: "", criticalRainfallThreshold: 10 });
       await loadData();
       alert("Zone created");
-    } catch (error) {
-      alert("Failed to create zone");
-    }
+    } catch { alert("Failed to create zone"); }
   };
 
   const handleUpdateZone = async (e) => {
     e.preventDefault();
     if (!canEdit) return alert("You don't have permission");
     try {
-      await updateZone(editingZone.id, {
-        name: zoneForm.name,
-        description: zoneForm.description,
-        criticalRainfallThreshold: parseFloat(zoneForm.criticalRainfallThreshold),
-      });
+      await updateZone(editingZone.id, { name: zoneForm.name, description: zoneForm.description, criticalRainfallThreshold: parseFloat(zoneForm.criticalRainfallThreshold) });
       setEditingZone(null);
       setZoneForm({ name: "", description: "", criticalRainfallThreshold: 10 });
       await loadData();
       alert("Zone updated");
-    } catch (error) {
-      alert("Failed to update zone");
-    }
+    } catch { alert("Failed to update zone"); }
   };
 
   const handleDeleteZone = async (id) => {
     if (!canDelete) return alert("Only Admin can delete");
-    if (window.confirm("Are you sure?")) {
-      await deleteZone(id);
-      await loadData();
-      alert("Zone deleted");
-    }
+    if (window.confirm("Are you sure?")) { await deleteZone(id); await loadData(); alert("Zone deleted"); }
   };
 
   const startEditZone = (zone) => {
     setEditingZone(zone);
-    setZoneForm({
-      name: zone.name,
-      description: zone.description || "",
-      criticalRainfallThreshold: zone.criticalRainfallThreshold,
-    });
+    setZoneForm({ name: zone.name, description: zone.description || "", criticalRainfallThreshold: zone.criticalRainfallThreshold });
   };
+  const cancelEditZone = () => { setEditingZone(null); setZoneForm({ name: "", description: "", criticalRainfallThreshold: 10 }); };
 
-  const cancelEditZone = () => {
-    setEditingZone(null);
-    setZoneForm({ name: "", description: "", criticalRainfallThreshold: 10 });
-  };
+  const allCombined = [...allFloodReports, ...allDrainReports];
 
   return (
     <div className="admin-page">
@@ -365,6 +312,28 @@ export default function AdminPanelPage() {
 
         {activeTab === "reports" && (
           <div className="admin-section">
+            <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+              {[
+                { label: "Total Reports", value: allCombined.length, color: "#67e8f9", icon: "📋" },
+                { label: "Pending", value: allCombined.filter(r => r.status === "Pending").length, color: "#f87171", icon: "⏳" },
+                { label: "In Progress", value: allCombined.filter(r => r.status === "In Progress").length, color: "#fb923c", icon: "🔍" },
+                { label: "Resolved", value: allCombined.filter(r => r.status === "Resolved").length, color: "#4ade80", icon: "✅" },
+                
+              ].map((stat) => (
+                <div key={stat.label} style={{
+                  flex: "1", minWidth: "130px", padding: "14px 16px",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderTop: `3px solid ${stat.color}`,
+                  borderRadius: "14px", textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "20px", marginBottom: "4px" }}>{stat.icon}</div>
+                  <div style={{ fontSize: "24px", fontWeight: "800", color: stat.color }}>{stat.value}</div>
+                  <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: "3px" }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
             <div className="admin-tabs" style={{ marginBottom: "16px" }}>
               <button className={`admin-tab ${reportsTab === "drain" ? "active" : ""}`} onClick={() => setReportsTab("drain")}>
                 🚧 Drain Reports ({allDrainReports.length})
@@ -373,6 +342,7 @@ export default function AdminPanelPage() {
                 🌊 Flood Reports ({allFloodReports.length})
               </button>
             </div>
+
             <div className="admin-list">
               {(reportsTab === "drain" ? allDrainReports : allFloodReports).map(report => (
                 <div key={report.id} className="admin-item" onClick={() => setSelectedReport(report)} style={{ cursor: "pointer" }}>
@@ -398,7 +368,7 @@ export default function AdminPanelPage() {
                       >
                         <option value="">Change status</option>
                         <option value="1">Pending</option>
-                        <option value="2">Reviewed</option>
+                        <option value="2">In Progress</option>
                         <option value="3">Resolved</option>
                       </select>
                     )}

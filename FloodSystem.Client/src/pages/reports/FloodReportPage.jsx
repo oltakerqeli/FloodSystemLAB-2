@@ -75,6 +75,9 @@ export default function FloodReportPage() {
             <p className="rp-subtitle">Report a flooding incident in your area</p>
           </div>
         </div>
+        <button type="button" className="rp-btn rp-btn--outline rp-btn--full" onClick={() => navigate("/my-reports")}>
+            ← Back to My Reports
+          </button>
 
         <div className="rp-divider" />
 

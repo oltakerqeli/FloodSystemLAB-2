@@ -93,6 +93,9 @@ export default function DrainReportPage() {
             <p className="rp-subtitle">Help keep the city safe by reporting drain blockages</p>
           </div>
         </div>
+        <button type="button" className="rp-btn rp-btn--outline rp-btn--full" onClick={() => navigate("/my-reports")}>
+          ← Back to My Reports
+        </button>
 
         <div className="rp-divider" />
 
@@ -172,10 +175,9 @@ export default function DrainReportPage() {
               </button>
             )}
           </div>
-
           <button type="submit" className="rp-btn rp-btn--primary rp-btn--full" disabled={loading}>
-            {loading ? "Submitting..." : "🚧 Submit Report"}
-          </button>
+          {loading ? "Submitting..." : "🚧 Submit Report"}
+        </button>
         </form>
       </div>
     </div>

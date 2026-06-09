@@ -80,9 +80,13 @@ export default function MyReportsPage() {
     <div className="my-reports-page">
       <div className="my-reports-page__header">
         <div>
+          
           <h1>📋 My Reports</h1>
           <p>All reports you have submitted</p>
         </div>
+        <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => navigate("/dashboard")}>
+  ← Dashboard
+</button>
         <div className="my-reports-page__actions">
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <button className="rp-btn rp-btn--outline rp-btn--sm" onClick={() => navigate("/report/drain")}>
@@ -135,6 +139,7 @@ export default function MyReportsPage() {
           </div>
         </div>
       </div>
+      
 
       <div className="report-tabs">
         <button className={`report-tab ${activeTab === "drain" ? "report-tab--active" : ""}`} onClick={() => setActiveTab("drain")}>
@@ -161,6 +166,7 @@ export default function MyReportsPage() {
           <option value="oldest">Oldest first</option>
         </select>
       </div>
+      
 
       <div className="report-list">
         {loading ? (
