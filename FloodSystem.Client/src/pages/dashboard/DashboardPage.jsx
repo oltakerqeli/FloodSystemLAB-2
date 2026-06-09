@@ -142,6 +142,7 @@ export default function DashboardPage() {
               <Link to="/report/drain">🚧 Report Drain</Link>
             </div>
           </div>
+          <Link to="/search" className="db-nav-link"><span>🔍</span> Search</Link>
 
           {/* PANEL - vetëm për Admin/Authority */}
           {isAdminOrAuthority && (

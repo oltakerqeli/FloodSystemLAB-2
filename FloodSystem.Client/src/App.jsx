@@ -18,6 +18,7 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyResetCode from "./pages/auth/VerifyResetCode";
 import ResetPassword from "./pages/auth/ResetPassword";
+import SearchPage from "./pages/search/SearchPage";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -69,6 +70,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-reset-code" element={<VerifyResetCode />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/search" element={<SearchPage />} />
       </Routes>
     </BrowserRouter>
   );
