@@ -306,8 +306,8 @@ export default function SearchPage() {
                 <select name="status" value={filters.status} onChange={handleChange}
                   style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: "white", fontSize: "14px" }}>
                   <option value="" style={{ background: "#0d2252" }}>All statuses</option>
-                  <option value="Active" style={{ background: "#0d2252" }}>Active</option>
-                  <option value="Resolved" style={{ background: "#0d2252" }}>Resolved</option>
+                  <option value="OPEN" style={{ background: "#0d2252" }}>OPEN</option>
+                  <option value="BLOCKED" style={{ background: "#0d2252" }}>BLOCKED</option>
                 </select>
               </div>
             )}
