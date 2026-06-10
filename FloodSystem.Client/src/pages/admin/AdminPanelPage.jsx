@@ -102,6 +102,7 @@ export default function AdminPanelPage() {
   const { user } = useAuth();
   const [locations, setLocations] = useState([]);
   const [zones, setZones] = useState([]);
+  const [settings, setSettings] = useState([]);
   const [activeTab, setActiveTab] = useState("locations");
   const [loading, setLoading] = useState(true);
   const [editingLocation, setEditingLocation] = useState(null);
@@ -112,8 +113,6 @@ export default function AdminPanelPage() {
   const [reportsTab, setReportsTab] = useState("drain");
   const [form, setForm] = useState({ name: "", description: "", latitude: "", longitude: "" });
   const [zoneForm, setZoneForm] = useState({ name: "", description: "", criticalRainfallThreshold: 10 });
-  
-  // State për lidhjen Zones me Locations
   const [selectedZoneId, setSelectedZoneId] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [zoneLocations, setZoneLocations] = useState([]);
@@ -134,98 +133,81 @@ export default function AdminPanelPage() {
       const drainRes = await fetch(`${API_BASE_URL}/Reports/drain/all`, { credentials: "include" });
       if (floodRes.ok) setAllFloodReports(await floodRes.json());
       if (drainRes.ok) setAllDrainReports(await drainRes.json());
+      if (isAdmin) {
+        const settingsRes = await fetch(`${API_BASE_URL}/Dashboard/settings`, { credentials: "include" });
+        if (settingsRes.ok) setSettings(await settingsRes.json());
+      }
     } catch (error) {
       console.error("Failed to load data:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
-  // Ngarko location-et e një zone
   const loadZoneLocations = async (zoneId) => {
     if (!zoneId) return;
     setLoadingLocations(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations`, {
-        credentials: "include"
-      });
+      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations`, { credentials: "include" });
       const data = await response.json();
       setZoneLocations(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Failed to load zone locations:", error);
       setZoneLocations([]);
     } finally {
       setLoadingLocations(false);
     }
   };
 
-  // Lidh Location me Zone
   const handleLinkLocationToZone = async () => {
     if (!selectedZoneId || !selectedLocationId) return;
-    
     try {
       const response = await fetch(`${API_BASE_URL}/Zones/${selectedZoneId}/locations/${selectedLocationId}`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" }
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to link");
-      }
-      
+      if (!response.ok) { const error = await response.json(); throw new Error(error.message || "Failed to link"); }
       alert("Location linked to zone successfully!");
       await loadZoneLocations(selectedZoneId);
       await loadData();
       setSelectedLocationId(null);
-    } catch (error) {
-      alert("Failed to link: " + error.message);
-    }
+    } catch (error) { alert("Failed to link: " + error.message); }
   };
 
-  // Hiq location nga zona
   const handleUnlinkLocation = async (zoneId, locationId) => {
     if (!window.confirm("Remove this location from the zone?")) return;
-    
     try {
-      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations/${locationId}`, {
-        method: "DELETE",
-        credentials: "include"
-      });
-      
+      const response = await fetch(`${API_BASE_URL}/Zones/${zoneId}/locations/${locationId}`, { method: "DELETE", credentials: "include" });
       if (!response.ok) throw new Error("Failed to unlink");
-      
       alert("Location removed from zone");
       await loadZoneLocations(zoneId);
       await loadData();
-    } catch (error) {
-      alert("Failed to remove: " + error.message);
-    }
+    } catch (error) { alert("Failed to remove: " + error.message); }
   };
 
-  // Kur ndryshon zona e zgjedhur, ngarko location-et e saj
+  const handleUpdateSetting = async (id, value) => {
+    try {
+      await fetch(`${API_BASE_URL}/Dashboard/settings/${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(value)
+      });
+      await loadData();
+    } catch { alert("Failed to update setting"); }
+  };
+
   useEffect(() => {
-    if (selectedZoneId) {
-      loadZoneLocations(selectedZoneId);
-    } else {
-      setZoneLocations([]);
-    }
+    if (selectedZoneId) loadZoneLocations(selectedZoneId);
+    else setZoneLocations([]);
   }, [selectedZoneId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleStatusChange = async (id, statusId, type) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/Reports/${id}/status?statusId=${statusId}&type=${type}`,
-        { method: "PATCH", credentials: "include" }
-      );
+      const response = await fetch(`${API_BASE_URL}/Reports/${id}/status?statusId=${statusId}&type=${type}`, { method: "PATCH", credentials: "include" });
       if (!response.ok) throw new Error("Failed");
       await loadData();
-    } catch (err) {
-      alert("Failed to update status");
-    }
+    } catch (err) { alert("Failed to update status"); }
   };
 
   const handleCreateLocation = async (e) => {
@@ -305,12 +287,12 @@ export default function AdminPanelPage() {
     <div className="admin-page">
       <div className="admin-container">
         <div className="admin-header">
-  <h1>Admin Panel</h1>
-  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-    <NotificationBell />
-    <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>← Back</button>
-  </div>
-</div>
+          <h1>Admin Panel</h1>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <NotificationBell />
+            <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>← Back</button>
+          </div>
+        </div>
 
         <div className="admin-tabs">
           <button className={`admin-tab ${activeTab === "locations" ? "active" : ""}`} onClick={() => setActiveTab("locations")}>
@@ -323,16 +305,17 @@ export default function AdminPanelPage() {
             📋 Reports ({allFloodReports.length + allDrainReports.length})
           </button>
           {canEdit && (
-            <button
-              className={`admin-tab ${activeTab === "users" ? "active" : ""}`}
-              onClick={() => setActiveTab("users")}
-            >
+            <button className={`admin-tab ${activeTab === "users" ? "active" : ""}`} onClick={() => setActiveTab("users")}>
               👥 Manage Users
+            </button>
+          )}
+          {isAdmin && (
+            <button className={`admin-tab ${activeTab === "settings" ? "active" : ""}`} onClick={() => setActiveTab("settings")}>
+              ⚙️ Settings
             </button>
           )}
         </div>
 
-        {/* LOCATIONS TAB */}
         {activeTab === "locations" && (
           <div className="admin-section">
             {canEdit && (
@@ -367,7 +350,6 @@ export default function AdminPanelPage() {
           </div>
         )}
 
-        {/* ZONES TAB */}
         {activeTab === "zones" && (
           <div className="admin-section">
             {canEdit && (
@@ -382,47 +364,26 @@ export default function AdminPanelPage() {
                 </div>
               </form>
             )}
-
-            {/* Dropdown për të lidhur Locations me Zone */}
             <div className="zone-linking-section">
               <h3>🔗 Link Locations to Zone</h3>
               <div className="zone-linking-form">
-                <select
-                  className="zone-select"
-                  value={selectedZoneId || ""}
-                  onChange={(e) => setSelectedZoneId(parseInt(e.target.value))}
-                >
+                <select className="zone-select" value={selectedZoneId || ""} onChange={(e) => setSelectedZoneId(parseInt(e.target.value))}>
                   <option value="">Select Zone</option>
                   {zones.map(zone => (
-                    <option key={zone.id} value={zone.id}>
-                      {zone.name} (Threshold: {zone.criticalRainfallThreshold}mm)
-                    </option>
+                    <option key={zone.id} value={zone.id}>{zone.name} (Threshold: {zone.criticalRainfallThreshold}mm)</option>
                   ))}
                 </select>
-
-                <select
-                  className="location-select"
-                  value={selectedLocationId || ""}
-                  onChange={(e) => setSelectedLocationId(parseInt(e.target.value))}
-                >
+                <select className="location-select" value={selectedLocationId || ""} onChange={(e) => setSelectedLocationId(parseInt(e.target.value))}>
                   <option value="">Select Location</option>
                   {locations.map(loc => (
-                    <option key={loc.id} value={loc.id}>
-                      {loc.name} ({loc.latitude}, {loc.longitude})
-                    </option>
+                    <option key={loc.id} value={loc.id}>{loc.name} ({loc.latitude}, {loc.longitude})</option>
                   ))}
                 </select>
-
-                <button 
-                  className="link-btn" 
-                  onClick={handleLinkLocationToZone}
-                  disabled={!selectedZoneId || !selectedLocationId}
-                >
+                <button className="link-btn" onClick={handleLinkLocationToZone} disabled={!selectedZoneId || !selectedLocationId}>
                   🔗 Link Location to Zone
                 </button>
               </div>
             </div>
-
             <div className="admin-list">
               <h3>Existing Zones</h3>
               {loading ? <div>Loading...</div> : zones.map(zone => (
@@ -439,25 +400,16 @@ export default function AdminPanelPage() {
                 </div>
               ))}
             </div>
-
-            {/* Lista e location-eve për zonën e zgjedhur */}
             {selectedZoneId && (
               <div className="zone-locations-list">
                 <h3>📍 Locations in {zones.find(z => z.id === selectedZoneId)?.name}</h3>
-                {loadingLocations ? (
-                  <div>Loading...</div>
-                ) : zoneLocations.length === 0 ? (
+                {loadingLocations ? <div>Loading...</div> : zoneLocations.length === 0 ? (
                   <div className="no-locations">No locations linked to this zone</div>
                 ) : (
                   zoneLocations.map(loc => (
                     <div key={loc.id} className="zone-location-item">
                       <span>{loc.name}</span>
-                      <button 
-                        className="unlink-btn"
-                        onClick={() => handleUnlinkLocation(selectedZoneId, loc.id)}
-                      >
-                        Remove
-                      </button>
+                      <button className="unlink-btn" onClick={() => handleUnlinkLocation(selectedZoneId, loc.id)}>Remove</button>
                     </div>
                   ))
                 )}
@@ -466,7 +418,6 @@ export default function AdminPanelPage() {
           </div>
         )}
 
-        {/* REPORTS TAB */}
         {activeTab === "reports" && (
           <div className="admin-section">
             <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
@@ -478,10 +429,8 @@ export default function AdminPanelPage() {
               ].map((stat) => (
                 <div key={stat.label} style={{
                   flex: "1", minWidth: "130px", padding: "14px 16px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderTop: `3px solid ${stat.color}`,
-                  borderRadius: "14px", textAlign: "center"
+                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderTop: `3px solid ${stat.color}`, borderRadius: "14px", textAlign: "center"
                 }}>
                   <div style={{ fontSize: "20px", marginBottom: "4px" }}>{stat.icon}</div>
                   <div style={{ fontSize: "24px", fontWeight: "800", color: stat.color }}>{stat.value}</div>
@@ -489,7 +438,6 @@ export default function AdminPanelPage() {
                 </div>
               ))}
             </div>
-
             <div className="admin-tabs" style={{ marginBottom: "16px" }}>
               <button className={`admin-tab ${reportsTab === "drain" ? "active" : ""}`} onClick={() => setReportsTab("drain")}>
                 🚧 Drain Reports ({allDrainReports.length})
@@ -498,7 +446,6 @@ export default function AdminPanelPage() {
                 🌊 Flood Reports ({allFloodReports.length})
               </button>
             </div>
-
             <div className="admin-list">
               {(reportsTab === "drain" ? allDrainReports : allFloodReports).map(report => (
                 <div key={report.id} className="admin-item" onClick={() => setSelectedReport(report)} style={{ cursor: "pointer" }}>
@@ -515,12 +462,7 @@ export default function AdminPanelPage() {
                       <select
                         value=""
                         onChange={(e) => handleStatusChange(report.id, e.target.value, reportsTab === "drain" ? "Drain" : "Flood")}
-                        style={{
-                          padding: "4px 8px", borderRadius: "8px",
-                          background: "rgba(255,255,255,0.1)",
-                          border: "1px solid rgba(255,255,255,0.2)",
-                          color: "white", fontSize: "12px"
-                        }}
+                        style={{ padding: "4px 8px", borderRadius: "8px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", fontSize: "12px" }}
                       >
                         <option value="">Change status</option>
                         <option value="1">Pending</option>
@@ -529,6 +471,39 @@ export default function AdminPanelPage() {
                       </select>
                     )}
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "settings" && isAdmin && (
+          <div className="admin-section">
+            <h3 style={{ color: "white", marginBottom: "20px" }}>⚙️ System Settings</h3>
+            <div className="admin-list">
+              {settings.map(s => (
+                <div key={s.id} className="admin-item">
+                  <div>
+                    <strong>{s.key}</strong>
+                    {s.description && <span className="admin-desc">{s.description}</span>}
+                  </div>
+                  <input
+                    defaultValue={s.value}
+                    onBlur={(e) => {
+                      if (e.target.value !== s.value) {
+                        handleUpdateSetting(s.id, e.target.value);
+                      }
+                    }}
+                    style={{
+                      padding: "6px 12px",
+                      background: "rgba(255,255,255,0.1)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: "8px",
+                      color: "white",
+                      fontSize: "13px",
+                      width: "120px"
+                    }}
+                  />
                 </div>
               ))}
             </div>
