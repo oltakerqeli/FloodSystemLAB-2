@@ -6,6 +6,7 @@ import { getWeatherLatestAll, getAlerts, getZones, getLocations, getSafeRoutes }
 import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/apiConfig";
 import "./DashboardPage.css";
+import NotificationBell from "../../components/notifications/NotificationBell";
 
 const RISK_COLOR = {
   low: { fill: "#22c55e", stroke: "#16a34a" },
@@ -204,9 +205,10 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="db-navbar-user">
-          <span className="db-user-name-nav">{user?.firstName} {user?.lastName}</span>
-          <button className="db-logout-btn-nav" onClick={handleLogout}>Logout</button>
-        </div>
+  <NotificationBell />
+  <span className="db-user-name-nav">{user?.firstName} {user?.lastName}</span>
+  <button className="db-logout-btn-nav" onClick={handleLogout}>Logout</button>
+</div>
       </nav>
 
       {/* MAIN CONTENT */}

@@ -77,4 +77,10 @@ public class DashboardRepository : IDashboardRepository
         await _context.SaveChangesAsync();
         return log;
     }
+    public async Task<List<Notification>> GetNotificationsForUserAsync(int userId, bool includeAdminNotifications)
+        => await _context.Notifications
+            .Where(n => n.UserId == userId || (includeAdminNotifications && n.UserId == null))
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(50)
+            .ToListAsync();
 }

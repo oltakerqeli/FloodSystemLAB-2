@@ -155,11 +155,11 @@ export default function MyReportsPage() {
       <div className="report-filter">
         <label>Status:</label>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All</option>
-          <option value="pending">Pending</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="resolved">Resolved</option>
-        </select>
+  <option value="">All</option>
+  <option value="pending">Pending</option>
+  <option value="in progress">In Progress</option>
+  <option value="resolved">Resolved</option>
+</select>
         <label style={{ marginLeft: "12px" }}>Sort:</label>
         <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
           <option value="newest">Newest first</option>

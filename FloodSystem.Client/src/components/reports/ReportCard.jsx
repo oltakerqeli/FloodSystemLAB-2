@@ -1,9 +1,13 @@
 import { useState } from "react";
 import "./ReportCard.css";
+function normalize(value) {
+  return value?.trim().toLowerCase().replace(/\s+/g, "-") ?? "";
+}
 
 const STATUS_LABELS = {
   pending: "Pending",
   reviewed: "Reviewed",
+  "in-progress": "In Progress",
   resolved: "Resolved",
   active: "Active",
 };
@@ -48,12 +52,12 @@ function ReportModal({ report, type, onClose }) {
 
         <div className="rc-modal__body">
           <div className="rc-modal__badges">
-            <span className={`badge badge--${report.status?.toLowerCase()}`}>
-              {STATUS_LABELS[report.status?.toLowerCase()] ?? report.status}
-            </span>
-            <span className={`badge badge--${report.severity?.toLowerCase()}`}>
-              {SEVERITY_LABELS[report.severity?.toLowerCase()] ?? report.severity}
-            </span>
+            <span className={`badge badge--${normalize(report.status)}`}>
+  {STATUS_LABELS[normalize(report.status)] ?? report.status}
+</span>
+<span className={`badge badge--${normalize(report.severity)}`}>
+  {SEVERITY_LABELS[normalize(report.severity)] ?? report.severity}
+</span>
             {isFlood && report.waterLevelCm > 0 && (
               <span className="badge badge--water">💧 {report.waterLevelCm} cm</span>
             )}
@@ -108,17 +112,17 @@ export default function ReportCard({ report, type = "drain" }) {
   return (
     <>
       <div
-        className={`report-card report-card--${report.severity?.toLowerCase()}`}
+        className={`report-card report-card--${normalize(report.severity)}`}
         onClick={() => setShowModal(true)}
         style={{ cursor: "pointer" }}
       >
         <div className="report-card__header">
           <div className="report-card__badges">
-            <span className={`badge badge--${report.status?.toLowerCase()}`}>
-              {STATUS_LABELS[report.status?.toLowerCase()] ?? report.status}
+            <span className={`badge badge--${normalize(report.status)}`}>
+              {STATUS_LABELS[normalize(report.status)] ?? report.status}
             </span>
-            <span className={`badge badge--${report.severity?.toLowerCase()}`}>
-              {SEVERITY_LABELS[report.severity?.toLowerCase()] ?? report.severity}
+            <span className={`badge badge--${normalize(report.severity)}`}>
+              {SEVERITY_LABELS[normalize(report.severity)] ?? report.severity}
             </span>
             {isFlood && report.waterLevelCm > 0 && (
               <span className="badge badge--water">

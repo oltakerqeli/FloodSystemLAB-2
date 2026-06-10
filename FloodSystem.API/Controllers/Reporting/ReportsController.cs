@@ -34,6 +34,15 @@ public class ReportsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var result = await _service.CreateFloodReportAsync(dto, userId);
+        await _dashboardRepo.CreateNotificationAsync(new Notification
+        {
+            UserId = null,
+            Type = "report",
+            Title = "New Flood Report",
+            Message = $"{dto.LocationName} - {dto.Severity}",
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        });
 
         try
         {
@@ -57,6 +66,15 @@ public class ReportsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var result = await _service.CreateDrainReportAsync(dto, userId);
+        await _dashboardRepo.CreateNotificationAsync(new Notification
+        {
+            UserId = null,
+            Type = "report",
+            Title = "New Drain Report",
+            Message = $"{dto.Street ?? "Unknown"} - {dto.Severity}",
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        });
 
         try
         {
@@ -99,43 +117,51 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> GetAllDrainReports()
         => Ok(await _service.GetAllDrainReportsAsync());
 
-    [HttpPatch("{id}/status")]
-[Authorize(Roles = "Authority")]
-public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
-{
-    await _service.UpdateReportStatusAsync(id, statusId, type);
-
-    var statusName = statusId switch
+  [HttpPatch("{id}/status")]
+    [Authorize(Roles = "Authority")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
     {
-        1 => "Pending",
-        2 => "In Progress",
-        3 => "Resolved",
-        _ => "Updated"
-    };
+        var ownerUserId = await _service.GetReportOwnerIdAsync(id, type);
 
-    await _dashboardRepo.CreateNotificationAsync(new Notification
-    {
-        UserId = null,
-        Type = "status",
-        Title = $"Report #{id} Status Changed",
-        Message = $"{type} Report #{id} is now {statusName}",
-        IsRead = false,
-        CreatedAt = DateTime.UtcNow
-    });
+        await _service.UpdateReportStatusAsync(id, statusId, type);
 
-    try
-    {
-        await _hubContext.Clients.Group("All").SendAsync("StatusChanged", new
+        var statusName = statusId switch
         {
-            reportId = id,
-            reportType = type,
-            newStatus = statusName,
-            message = $"{type} Report #{id} is now {statusName}",
-            timestamp = DateTime.UtcNow
-        });
-    }
-    catch { }
+            1 => "Pending",
+            2 => "In Progress",
+            3 => "Resolved",
+            _ => "Updated"
+        };
 
-    return NoContent();
-}
+        await _dashboardRepo.CreateNotificationAsync(new Notification
+        {
+            UserId = ownerUserId,
+            Type = "status",
+            Title = $"Report #{id} Status Changed",
+            Message = $"{type} Report #{id} is now {statusName}",
+            IsRead = false,
+            CreatedAt = DateTime.UtcNow
+        });
+
+        if (ownerUserId.HasValue)
+        {
+            try
+            {
+                await _hubContext.Clients.Group($"user_{ownerUserId.Value}").SendAsync("StatusChanged", new
+                {
+                    reportId = id,
+                    reportType = type,
+                    newStatus = statusName,
+                    message = $"{type} Report #{id} is now {statusName}",
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SignalR send failed: {ex.Message}");
+            }
+        }
+
+        return NoContent();
+    }
 }

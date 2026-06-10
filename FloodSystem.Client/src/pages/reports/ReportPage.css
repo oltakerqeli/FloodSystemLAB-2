@@ -479,3 +479,21 @@
   appearance: none;
   -webkit-appearance: none;
 }
+.notification-bell {
+  position: relative;
+  z-index: 5000;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 5000;
+  background: linear-gradient(135deg, #0a1a3a, #0d2252);
+  border: 1px solid rgba(99, 179, 237, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}

@@ -5,11 +5,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { API_BASE_URL } from "../../utils/apiConfig";
 import "./AdminPanelPage.css";
 import ManageUsers from "./ManageUsers";
+import NotificationBell from "../../components/notifications/NotificationBell";
 
 function getStatusStyle(status) {
   switch (status) {
     case "Resolved":
       return { background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.4)" };
+    case "In Progress":
     case "Reviewed":
       return { background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.4)" };
     case "Pending":
@@ -303,9 +305,12 @@ export default function AdminPanelPage() {
     <div className="admin-page">
       <div className="admin-container">
         <div className="admin-header">
-          <h1>Admin Panel</h1>
-          <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>← Back</button>
-        </div>
+  <h1>Admin Panel</h1>
+  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+    <NotificationBell />
+    <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>← Back</button>
+  </div>
+</div>
 
         <div className="admin-tabs">
           <button className={`admin-tab ${activeTab === "locations" ? "active" : ""}`} onClick={() => setActiveTab("locations")}>

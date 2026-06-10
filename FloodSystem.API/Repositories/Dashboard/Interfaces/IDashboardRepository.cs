@@ -7,6 +7,7 @@ public interface IDashboardRepository
     Task<List<AuditLog>> GetAllAuditLogsAsync();
     Task<AuditLog> CreateAuditLogAsync(AuditLog log);
     Task<List<Notification>> GetNotificationsByUserAsync(int userId);
+    Task<List<Notification>> GetNotificationsForUserAsync(int userId, bool includeAdminNotifications);
     Task<Notification> CreateNotificationAsync(Notification notification);
     Task MarkNotificationAsReadAsync(int id);
     Task<List<Setting>> GetAllSettingsAsync();
