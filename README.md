@@ -24,8 +24,9 @@ Trello: [https://trello.com/b/XXXXXXXX/flood-system](https://trello.com/b/kgpJJL
 11. Real-Time Communication
 12. Authentication and Roles
 13. Testing
-14. Authors
-15. License
+14. Troubleshooting
+15. Authors
+16. License
 
 
 1. 🌟 Overview
@@ -488,9 +489,22 @@ Explore:
 * Reports
 * Notifications
 
+14. ⚠️ Troubleshooting
+
+### Gabimi: `401 Unauthorized`
+**Zgjidhja**: Sigurohu që ke bërë login dhe ke vendosur token-in në Swagger (kliko "Authorize").
+
+### Gabimi: `404 Not Found` për SignalR
+**Zgjidhja**: Verifiko që ke shtuar `app.MapHub<NotificationHub>("/notificationHub");` në Program.cs.
+
+### Gabimi: MongoDB connection failed
+**Zgjidhja**: Sigurohu që MongoDB është duke run (komanda: `mongod`).
+
+### Njoftimet nuk po vijnë
+**Zgjidhja**: Kontrollo Console-n në browser (F12) për gabime të SignalR.
 
 
-14 👥 Authors
+15. 👥 Authors
 
 | Name  | Responsibility                              | Module   |
 | ----- | ------------------------------------------- | -------- |
@@ -501,8 +515,10 @@ Explore:
 
 
 
-15. 📄 License
+16. 📄 License
 
 This project was developed for academic purposes.
 
 © 2026 Flood System Team
+
+
