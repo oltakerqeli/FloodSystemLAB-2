@@ -210,4 +210,17 @@ public async Task<List<ReportResponseDto>> GetAllDrainReportsAsync()
             : null
     }).ToList();
 }
+public async Task<int?> GetReportOwnerIdAsync(int reportId, string type)
+{
+    if (type.ToLower() == "flood")
+    {
+        var report = await _context.FloodReports.FindAsync(reportId);
+        return report?.UserId;
+    }
+    else
+    {
+        var report = await _context.DrainReports.FindAsync(reportId);
+        return report?.UserId;
+    }
+}
 }

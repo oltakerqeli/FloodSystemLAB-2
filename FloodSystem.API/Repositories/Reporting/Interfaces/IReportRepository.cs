@@ -11,4 +11,5 @@ public interface IReportRepository
     Task<List<FloodReport>> GetAllFloodReportsAsync();
     Task<List<DrainReport>> GetAllDrainReportsAsync();
     Task UpdateReportStatusAsync(int id, int statusId, string type);
+    Task<int?> GetReportOwnerIdAsync(int reportId, string type);
 }

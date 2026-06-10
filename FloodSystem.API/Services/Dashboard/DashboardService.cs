@@ -71,6 +71,14 @@ public class DashboardService : IDashboardService
                 Entity = "Notifications",
                 Time = DateTime.UtcNow.ToString()
             });
+
+        await _repo.CreateAuditLogAsync(new AuditLog
+        {
+            UserId = dto.UserId,
+            Action = "CREATE_NOTIFICATION",
+            Entity = "Notification",
+            CreatedAt = DateTime.UtcNow
+        });
     }
 
     public async Task MarkNotificationAsReadAsync(int id)
@@ -104,6 +112,14 @@ public class DashboardService : IDashboardService
                 Entity = type,
                 Time = DateTime.UtcNow.ToString()
             });
+
+        await _repo.CreateAuditLogAsync(new AuditLog
+        {
+            UserId = userId,
+            Action = "IMPORT_DATA",
+            Entity = type,
+            CreatedAt = DateTime.UtcNow
+        });
 
         var extension = Path.GetExtension(file.FileName).ToLower();
 
@@ -267,6 +283,14 @@ public class DashboardService : IDashboardService
                 Entity = dto.Type,
                 Time = DateTime.UtcNow.ToString()
             });
+
+        await _repo.CreateAuditLogAsync(new AuditLog
+        {
+            UserId = userId,
+            Action = "EXPORT_DATA",
+            Entity = dto.Type,
+            CreatedAt = DateTime.UtcNow
+        });
 
         var format = dto.Format.ToLower();
         var type = dto.Type.ToLower();
@@ -528,6 +552,14 @@ public class DashboardService : IDashboardService
                 Entity = dto.ReportType,
                 Time = DateTime.UtcNow.ToString()
             });
+
+        await _repo.CreateAuditLogAsync(new AuditLog
+        {
+            UserId = userId,
+            Action = "GENERATE_DYNAMIC_REPORT",
+            Entity = dto.ReportType,
+            CreatedAt = DateTime.UtcNow
+        });
 
         var format = dto.Format.ToLower();
 

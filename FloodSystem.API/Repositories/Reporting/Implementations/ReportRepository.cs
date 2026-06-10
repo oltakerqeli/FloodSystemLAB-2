@@ -57,4 +57,18 @@ public class ReportRepository : IReportRepository
 
 public async Task<List<DrainReport>> GetAllDrainReportsAsync()
     => await _context.DrainReports.Include(r => r.Status).Include(r => r.File).ToListAsync();
+
+public async Task<int?> GetReportOwnerIdAsync(int reportId, string type)
+{
+    if (type.ToLower() == "flood")
+    {
+        var report = await _context.FloodReports.FindAsync(reportId);
+        return report?.UserId;
+    }
+    else
+    {
+        var report = await _context.DrainReports.FindAsync(reportId);
+        return report?.UserId;
+    }
+}
 }

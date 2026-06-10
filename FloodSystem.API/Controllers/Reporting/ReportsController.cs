@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using FloodSystem.API.Services.Reporting;
 using FloodSystem.API.DTOs.Reporting;
+using FloodSystem.API.Hubs;
+using FloodSystem.API.Models.Dashboard;
+using FloodSystem.API.Repositories.Dashboard;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FloodSystem.API.Controllers.Reporting;
 
@@ -12,10 +16,17 @@ namespace FloodSystem.API.Controllers.Reporting;
 public class ReportsController : ControllerBase
 {
     private readonly IReportService _service;
+    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly IDashboardRepository _dashboardRepo;
 
-    public ReportsController(IReportService service)
+    public ReportsController(
+        IReportService service,
+        IHubContext<NotificationHub> hubContext,
+        IDashboardRepository dashboardRepo)
     {
         _service = service;
+        _hubContext = hubContext;
+        _dashboardRepo = dashboardRepo;
     }
 
     [HttpPost("flood")]
@@ -23,6 +34,21 @@ public class ReportsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var result = await _service.CreateFloodReportAsync(dto, userId);
+
+        try
+        {
+            await _hubContext.Clients.Group("Admins").SendAsync("NewReport", new
+            {
+                id = result.Id,
+                type = "Flood",
+                location = dto.LocationName,
+                severity = dto.Severity,
+                description = dto.Description,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex) { }
+
         return Ok(result);
     }
 
@@ -31,6 +57,21 @@ public class ReportsController : ControllerBase
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         var result = await _service.CreateDrainReportAsync(dto, userId);
+
+        try
+        {
+            await _hubContext.Clients.Group("Admins").SendAsync("NewReport", new
+            {
+                id = result.Id,
+                type = "Drain",
+                location = dto.Street ?? "Unknown",
+                severity = dto.Severity,
+                description = dto.Description,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex) { }
+
         return Ok(result);
     }
 
@@ -51,22 +92,50 @@ public class ReportsController : ControllerBase
     [HttpGet("flood/all")]
     [Authorize(Roles = "Admin,Authority")]
     public async Task<IActionResult> GetAllFloodReports()
-    {
-        return Ok(await _service.GetAllFloodReportsAsync());
-    }
+        => Ok(await _service.GetAllFloodReportsAsync());
 
     [HttpGet("drain/all")]
     [Authorize(Roles = "Admin,Authority")]
     public async Task<IActionResult> GetAllDrainReports()
-    {
-        return Ok(await _service.GetAllDrainReportsAsync());
-    }
+        => Ok(await _service.GetAllDrainReportsAsync());
 
     [HttpPatch("{id}/status")]
-    [Authorize(Roles = "Authority")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
+[Authorize(Roles = "Authority")]
+public async Task<IActionResult> UpdateStatus(int id, [FromQuery] int statusId, [FromQuery] string type)
+{
+    await _service.UpdateReportStatusAsync(id, statusId, type);
+
+    var statusName = statusId switch
     {
-        await _service.UpdateReportStatusAsync(id, statusId, type);
-        return NoContent();
+        1 => "Pending",
+        2 => "In Progress",
+        3 => "Resolved",
+        _ => "Updated"
+    };
+
+    await _dashboardRepo.CreateNotificationAsync(new Notification
+    {
+        UserId = null,
+        Type = "status",
+        Title = $"Report #{id} Status Changed",
+        Message = $"{type} Report #{id} is now {statusName}",
+        IsRead = false,
+        CreatedAt = DateTime.UtcNow
+    });
+
+    try
+    {
+        await _hubContext.Clients.Group("All").SendAsync("StatusChanged", new
+        {
+            reportId = id,
+            reportType = type,
+            newStatus = statusName,
+            message = $"{type} Report #{id} is now {statusName}",
+            timestamp = DateTime.UtcNow
+        });
     }
+    catch { }
+
+    return NoContent();
+}
 }

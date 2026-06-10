@@ -18,6 +18,7 @@ using FloodSystem.API.Services.Search;
 using Microsoft.Extensions.FileProviders;
 using FloodSystem.API.Services;
 using FloodSystem.API.Services.Interfaces;
+using FloodSystem.API.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
@@ -50,6 +51,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddHostedService<WeatherBackgroundService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSignalR();
 
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();
@@ -165,4 +167,5 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<NotificationHub>("/notificationHub");
 app.Run();

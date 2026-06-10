@@ -173,6 +173,9 @@ namespace FloodSystem.API.Data
                     .WithMany(l => l.Alerts)
                     .HasForeignKey(e => e.LocationId);
             });
+            modelBuilder.Entity<FloodReport>()
+    .Property(r => r.WaterLevelCm)
+    .HasPrecision(8, 2);
 
             // TrafficUpdates konfigurimi
             modelBuilder.Entity<TrafficUpdate>(entity =>

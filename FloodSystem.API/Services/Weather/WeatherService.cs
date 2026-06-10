@@ -2,12 +2,15 @@ using System.Text.Json;
 using FloodSystem.API.Data;
 using FloodSystem.API.DTOs.Weather;
 using FloodSystem.API.Models.Weather;
+using FloodSystem.API.Models.Dashboard;
 using FloodSystem.API.Repositories.Weather.Interfaces;
+using FloodSystem.API.Repositories.Dashboard;
 using FloodSystem.API.MongoDB;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
+using FloodSystem.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FloodSystem.API.Services.Weather
 {
@@ -21,6 +24,8 @@ namespace FloodSystem.API.Services.Weather
         private readonly ILogger<WeatherService> _logger;
         private readonly HttpClient _httpClient;
         private readonly MongoDbService _mongoDbService;
+        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IDashboardRepository _dashboardRepo;
 
         public WeatherService(
             IWeatherDataRepository weatherDataRepo,
@@ -29,7 +34,9 @@ namespace FloodSystem.API.Services.Weather
             ITrafficUpdateRepository trafficRepo,
             IConfiguration configuration,
             ILogger<WeatherService> logger,
-            MongoDbService mongoDbService) 
+            MongoDbService mongoDbService,
+            IHubContext<NotificationHub> hubContext,
+            IDashboardRepository dashboardRepo)
         {
             _weatherDataRepo = weatherDataRepo;
             _locationRepo = locationRepo;
@@ -39,6 +46,8 @@ namespace FloodSystem.API.Services.Weather
             _configuration = configuration;
             _logger = logger;
             _httpClient = new HttpClient();
+            _hubContext = hubContext;
+            _dashboardRepo = dashboardRepo;
         }
 
         private string GetRiskLevel(decimal rainfall)
@@ -100,54 +109,81 @@ namespace FloodSystem.API.Services.Weather
             };
 
             await _weatherDataRepo.AddAsync(weatherData);
+
             try
-{
-    var rawCollection = _mongoDbService.GetCollection<WeatherRawData>("weather_raw");
-    var rawDoc = new WeatherRawData
-    {
-        LocationId = locationId,
-        LocationName = location.Name,
-        Temperature = weatherData.Temperature,
-        Rainfall = weatherData.Rainfall,
-        Humidity = weatherData.Humidity,
-        WeatherCondition = "Unknown",
-        WindSpeed = 0,
-        Pressure = 0,
-        FetchedAt = DateTime.UtcNow,
-        Source = "OpenWeatherMap"
-    };
-    await rawCollection.InsertOneAsync(rawDoc);
-    _logger.LogInformation($"Raw weather data saved to MongoDB for {location.Name}");
-}
-catch (Exception ex)
-{
-    _logger.LogWarning($"Could not save to MongoDB: {ex.Message}");
-}
+            {
+                var rawCollection = _mongoDbService.GetCollection<WeatherRawData>("weather_raw");
+                var rawDoc = new WeatherRawData
+                {
+                    LocationId = locationId,
+                    LocationName = location.Name,
+                    Temperature = weatherData.Temperature,
+                    Rainfall = weatherData.Rainfall,
+                    Humidity = weatherData.Humidity,
+                    WeatherCondition = "Unknown",
+                    WindSpeed = 0,
+                    Pressure = 0,
+                    FetchedAt = DateTime.UtcNow,
+                    Source = "OpenWeatherMap"
+                };
+                await rawCollection.InsertOneAsync(rawDoc);
+                _logger.LogInformation($"Raw weather data saved to MongoDB for {location.Name}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Could not save to MongoDB: {ex.Message}");
+            }
 
-           var riskLevel = GetRiskLevel(rainfall);
+            var riskLevel = GetRiskLevel(rainfall);
 
-// Kontrollo nëse risk level ka ndryshuar që nga alert-i i fundit
-var lastAlert = await _alertRepo.GetLatestByLocationIdAsync(locationId);
-var lastRiskLevel = lastAlert?.RiskLevel;
+            var lastAlert = await _alertRepo.GetLatestByLocationIdAsync(locationId);
+            var lastRiskLevel = lastAlert?.RiskLevel;
 
-// Krijo alert VETËM nëse nuk ka alert të mëparshëm OSE risk level ka ndryshuar
-if (lastAlert == null || lastRiskLevel != riskLevel)
-{
-    var alert = new Alert
-    {
-        Type = "Flood Warning",
-        Message = GetAlertMessage(location.Name, rainfall, riskLevel),
-        RiskLevel = riskLevel,
-        LocationId = locationId,
-        CreatedAt = DateTime.UtcNow
-    };
-    await _alertRepo.AddAsync(alert);
-    _logger.LogInformation($"New alert created for {location.Name}: {riskLevel}");
-}
-else
-{
-    _logger.LogInformation($"No risk change for {location.Name} (still {riskLevel}), skipping alert.");
-}
+            if (lastAlert == null || lastRiskLevel != riskLevel)
+            {
+                var alert = new Alert
+                {
+                    Type = "Flood Warning",
+                    Message = GetAlertMessage(location.Name, rainfall, riskLevel),
+                    RiskLevel = riskLevel,
+                    LocationId = locationId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _alertRepo.AddAsync(alert);
+
+                await _dashboardRepo.CreateNotificationAsync(new Notification
+                {
+                    UserId = null,
+                    Type = "alert",
+                    Title = $"{riskLevel} Risk Alert - {location.Name}",
+                    Message = alert.Message,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                try
+                {
+                    await _hubContext.Clients.Group("All").SendAsync("NewAlert", new
+                    {
+                        id = alert.Id,
+                        title = $"{riskLevel} Risk Alert - {location.Name}",
+                        message = alert.Message,
+                        location = location.Name,
+                        riskLevel = riskLevel,
+                        rainfall = rainfall,
+                        timestamp = DateTime.UtcNow
+                    });
+                    _logger.LogInformation($"Real-time notification sent for {location.Name}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning($"Failed to send notification: {ex.Message}");
+                }
+            }
+            else
+            {
+                _logger.LogInformation($"No risk change for {location.Name} (still {riskLevel}), skipping alert.");
+            }
 
             var trafficUpdate = new TrafficUpdate
             {
@@ -157,7 +193,6 @@ else
                 CreatedAt = DateTime.UtcNow
             };
             await _trafficRepo.AddAsync(trafficUpdate);
-
             await _weatherDataRepo.SaveChangesAsync();
 
             _logger.LogInformation($"Weather processed for {location.Name}: {rainfall}mm -> {riskLevel} risk");
